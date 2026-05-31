@@ -14,8 +14,6 @@ async function initStaff() {
 }
 
 async function fetchOrders() {
-  // Para MVP obtenemos todo lo que no esté cancelado. 
-  // Nota: En producción, añadir filtro de fecha para "historial de hoy".
   const { data: pedidos } = await supabase.from('pedidos')
     .select(`
       id, display_id, estado, stripe_pi_id,
@@ -31,11 +29,9 @@ async function fetchOrders() {
 }
 
 function renderKanban(pedidos) {
-  // Limpiar columnas
   Object.values(cols).forEach(col => col.innerHTML = '');
 
   pedidos.forEach(p => {
-    // Generar bloque HTML de items e ingredientes
     let itemsHtml = p.pedido_items.map(item => {
       let ings = item.ingredientes_personalizados.map(ing => 
         `<span class="text-xs ${ing.incluido ? 'text-green-600' : 'text-red-500 line-through'} block ml-4">
@@ -45,7 +41,6 @@ function renderKanban(pedidos) {
       return `<div class="mb-2"><span class="font-bold">${item.cantidad}x ${item.nombre_snapshot}</span>${ings}</div>`;
     }).join('');
 
-    // Generar Botones según estado
     let actionButtons = '';
     if (p.estado === 'preparando') {
       actionButtons = `<button onclick="updateOrderStatus('${p.id}', 'listo')" class="w-full bg-green-500 text-white font-bold py-2 rounded mt-2">MARCAR LISTO</button>`;
@@ -53,7 +48,6 @@ function renderKanban(pedidos) {
       actionButtons = `<button onclick="updateOrderStatus('${p.id}', 'entregado')" class="w-full bg-gray-500 text-white font-bold py-2 rounded mt-2">MARCAR ENTREGADO</button>`;
     }
     
-    // Botón de reembolso
     const refundBtn = p.estado !== 'entregado' ? `<button onclick="refundOrder('${p.id}', '${p.stripe_pi_id}')" class="w-full mt-2 bg-red-100 text-red-600 text-xs font-bold py-1 border border-red-500 rounded">REEMBOLSAR Y CANCELAR</button>` : '';
 
     const card = `
@@ -74,17 +68,11 @@ window.updateOrderStatus = async (id, newStatus) => {
   await supabase.from('pedidos').update({ estado: newStatus }).eq('id', id);
 };
 
-// REEMBOLSOS (Llama a Vercel Serverless Function)
+// REEMBOLSOS
 window.refundOrder = async (orderId, paymentIntentId) => {
   if(!confirm('¿Estás seguro de cancelar el pedido y reembolsar el dinero al cliente?')) return;
   
   try {
-    /* 
-    const res = await fetch('/api/refund', {
-      method: 'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ payment_intent_id: paymentIntentId })
-    });
-    */
     alert("Simulación: Reembolso Stripe ejecutado correctamente.");
     await supabase.from('pedidos').update({ estado: 'cancelado' }).eq('id', orderId);
   } catch (e) {
@@ -95,7 +83,7 @@ window.refundOrder = async (orderId, paymentIntentId) => {
 // REALTIME PARA STAFF
 function listenToAllOrders() {
   supabase.channel('staff-pedidos').on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, payload => {
-    fetchOrders(); // Recarga simple para mantener los items actualizados. En producción, mover DOM element para evitar refetch.
+    fetchOrders(); 
   }).subscribe();
 }
 
@@ -123,4 +111,71 @@ window.toggleStock = async (id, disponible) => {
   await supabase.from('productos').update({ disponible }).eq('id', id);
 };
 
+// --- LÓGICA DEL CREADOR DE MENÚ ---
+const productModal = document.getElementById('product-modal');
+const formNewProduct = document.getElementById('form-new-product');
+const dynamicIngredients = document.getElementById('dynamic-ingredients');
+
+// Abrir y cerrar modal
+document.getElementById('btn-new-product').onclick = () => {
+  formNewProduct.reset();
+  dynamicIngredients.innerHTML = ''; 
+  productModal.classList.remove('hidden');
+};
+
+document.getElementById('btn-close-product-modal').onclick = () => {
+  productModal.classList.add('hidden');
+};
+
+// Añadir campos dinámicos de ingredientes
+document.getElementById('btn-add-ingredient-field').onclick = () => {
+  const row = document.createElement('div');
+  row.className = 'flex gap-2 items-center bg-gray-50 p-2 rounded border';
+  row.innerHTML = `
+    <input type="text" placeholder="Ej. Queso Cheddar" required class="flex-1 border rounded p-1 text-sm ing-name">
+    <label class="flex items-center gap-1 text-sm whitespace-nowrap">
+      <input type="checkbox" checked class="ing-default"> Por defecto
+    </label>
+    <button type="button" class="text-red-500 font-bold px-2" onclick="this.parentElement.remove()">X</button>
+  `;
+  dynamicIngredients.appendChild(row);
+};
+
+// Guardar producto e ingredientes en Supabase
+formNewProduct.onsubmit = async (e) => {
+  e.preventDefault();
+  
+  // 1. Insertar el Producto
+  const { data: newProduct, error: prodError } = await supabase.from('productos')
+    .insert({
+      nombre: document.getElementById('prod-name').value,
+      precio: parseFloat(document.getElementById('prod-price').value),
+      descripcion: document.getElementById('prod-desc').value,
+      imagen_url: document.getElementById('prod-img').value,
+      disponible: true
+    })
+    .select()
+    .single();
+
+  if (prodError) return alert('Error al crear producto: ' + prodError.message);
+
+  // 2. Extraer y formatear los ingredientes dinámicos
+  const ingRows = dynamicIngredients.querySelectorAll('div.flex');
+  const ingredientesData = Array.from(ingRows).map(row => ({
+    producto_id: newProduct.id,
+    nombre: row.querySelector('.ing-name').value,
+    incluido_por_defecto: row.querySelector('.ing-default').checked
+  }));
+
+  // 3. Insertar ingredientes de forma masiva (Bulk Insert)
+  if (ingredientesData.length > 0) {
+    const { error: ingError } = await supabase.from('ingredientes').insert(ingredientesData);
+    if (ingError) return alert('Error al guardar ingredientes: ' + ingError.message);
+  }
+
+  alert('¡Producto creado exitosamente!');
+  productModal.classList.add('hidden');
+};
+
+// Arrancar KDS
 initStaff();
