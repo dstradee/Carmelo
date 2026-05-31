@@ -34,13 +34,18 @@ async function loadProducts() {
   const { data: productos, error } = await supabase.from('productos').select('*').eq('disponible', true);
   if (error) return console.error(error);
   
+  // He añadido el renderizado opcional de imagen y descripción que añadimos en BD
   productList.innerHTML = productos.map(p => `
     <div class="flex justify-between items-center p-4 border rounded-lg bg-gray-50" id="prod-${p.id}">
-      <div>
-        <h3 class="font-bold text-lg">${p.nombre}</h3>
-        <p class="text-gray-600">${p.precio} €</p>
+      <div class="flex gap-4 items-center">
+        ${p.imagen_url ? `<img src="${p.imagen_url}" alt="${p.nombre}" class="w-16 h-16 object-cover rounded-md">` : ''}
+        <div>
+          <h3 class="font-bold text-lg">${p.nombre}</h3>
+          ${p.descripcion ? `<p class="text-xs text-gray-500 mb-1 line-clamp-2">${p.descripcion}</p>` : ''}
+          <p class="text-gray-900 font-bold">${p.precio} €</p>
+        </div>
       </div>
-      <button onclick="openProductModal('${p.id}', '${p.nombre}', ${p.precio})" class="bg-black text-white px-4 py-2 rounded">Añadir</button>
+      <button onclick="openProductModal('${p.id}', '${p.nombre}', ${p.precio})" class="bg-black text-white px-4 py-2 rounded shrink-0 ml-2">Añadir</button>
     </div>
   `).join('');
 }
@@ -101,16 +106,13 @@ document.getElementById('btn-checkout').onclick = async () => {
 
   const total = cart.reduce((sum, item) => sum + parseFloat(item.product.precio), 0);
   
-  // 1. Simulación de pago Stripe (En producción llama a /api/create-checkout)
   const isPaid = confirm(`Simulando Pasarela Stripe (Apple/Google Pay).\nTotal: ${total.toFixed(2)}€\n¿Confirmar pago?`);
   
   if (isPaid) {
-    // 2. Registrar Pedido en Supabase tras pago exitoso
     const { data: order, error } = await supabase.from('pedidos').insert({
       email, total, stripe_pi_id: 'pi_fake_' + Date.now(), estado: 'preparando'
     }).select().single();
 
-    // 3. Insertar items e ingredientes
     for (let item of cart) {
       const { data: oi } = await supabase.from('pedido_items').insert({
         pedido_id: order.id, producto_id: item.product.id, nombre_snapshot: item.product.nombre
@@ -122,7 +124,6 @@ document.getElementById('btn-checkout').onclick = async () => {
       await supabase.from('ingredientes_personalizados').insert(customIngs);
     }
 
-    // 4. Cambiar estado frontend
     orderId = order.id;
     localStorage.setItem('order_id', orderId);
     cart = [];
@@ -159,7 +160,6 @@ function updateStatusUI(order) {
     badge.innerText = 'LISTO PARA RECOGER 🍔';
     badge.className = 'px-6 py-2 rounded-full text-white font-bold text-xl mb-6 bg-green-500';
     
-    // ANTI-CAPTURAS: Reloj dinámico
     antiScreen.classList.remove('hidden');
     clearInterval(clockInterval);
     clockInterval = setInterval(() => {
@@ -172,7 +172,6 @@ function updateStatusUI(order) {
     badge.innerText = 'ENTREGADO ✅';
     badge.className = 'px-6 py-2 rounded-full text-white font-bold text-xl mb-6 bg-gray-500';
     
-    // RESET CICLO
     enjoyMsg.classList.remove('hidden');
     localStorage.removeItem('order_id');
     orderId = null;
@@ -191,7 +190,6 @@ document.getElementById('btn-recovery').onclick = async () => {
   const email = prompt("Introduce el email con el que pagaste:");
   if (!email) return;
   
-  // Buscar último pedido activo
   const { data } = await supabase.from('pedidos')
     .select('*').eq('email', email).in('estado', ['preparando', 'listo']).order('created_at', { ascending: false }).limit(1).single();
   
@@ -204,7 +202,7 @@ document.getElementById('btn-recovery').onclick = async () => {
   }
 };
 
-// SUSCRIPCIONES REALTIME
+// SUSCRIPCIONES REALTIME MEJORADAS
 function listenToOrderUpdates(id) {
   supabase.channel('public:pedidos').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pedidos', filter: `id=eq.${id}` }, payload => {
     updateStatusUI(payload.new);
@@ -212,11 +210,24 @@ function listenToOrderUpdates(id) {
 }
 
 function listenToStockUpdates() {
-  supabase.channel('public:productos').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'productos' }, payload => {
-    const prodDiv = document.getElementById(`prod-${payload.new.id}`);
-    if (prodDiv && !payload.new.disponible) prodDiv.remove(); // Desaparece en tiempo real
-    if (!prodDiv && payload.new.disponible) loadProducts(); // Recarga si se activa
-  }).subscribe();
+  supabase.channel('public:productos')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'productos' }, payload => {
+      
+      // Intercepta si el staff ha creado un plato nuevo desde el KDS
+      if (payload.eventType === 'INSERT') {
+        if (payload.new.disponible) loadProducts();
+      } 
+      // Intercepta si el staff lo activa/desactiva
+      else if (payload.eventType === 'UPDATE') {
+        const prodDiv = document.getElementById(`prod-${payload.new.id}`);
+        if (prodDiv && !payload.new.disponible) {
+          prodDiv.remove(); // Oculta instantáneo
+        } else if (!prodDiv && payload.new.disponible) {
+          loadProducts(); // Reaparece recargando todo
+        }
+      }
+      
+    }).subscribe();
 }
 
 init();
