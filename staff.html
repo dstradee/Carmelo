@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KDS - Staff</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-200 h-screen overflow-hidden flex flex-col font-sans">
+
+  <header class="bg-black text-white p-4 flex justify-between items-center shadow-md">
+    <h1 class="text-2xl font-bold">KDS Dashboard</h1>
+    <button id="btn-stock-toggle" class="bg-blue-600 px-4 py-2 rounded font-bold hover:bg-blue-700">Gestionar Stock</button>
+  </header>
+
+  <!-- Kanban Board -->
+  <main id="kanban-view" class="flex-1 p-4 flex gap-4 overflow-x-auto">
+    <!-- Columna Preparando -->
+    <div class="flex-1 bg-white rounded-lg shadow flex flex-col min-w-[300px]">
+      <div class="bg-yellow-500 text-white font-bold p-3 rounded-t-lg text-center">PREPARANDO</div>
+      <div id="col-preparando" class="flex-1 p-3 overflow-y-auto space-y-3"></div>
+    </div>
+    
+    <!-- Columna Listos -->
+    <div class="flex-1 bg-white rounded-lg shadow flex flex-col min-w-[300px]">
+      <div class="bg-green-500 text-white font-bold p-3 rounded-t-lg text-center">LISTOS PARA RECOGER</div>
+      <div id="col-listo" class="flex-1 p-3 overflow-y-auto space-y-3"></div>
+    </div>
+    
+    <!-- Columna Historial -->
+    <div class="flex-1 bg-white rounded-lg shadow flex flex-col min-w-[300px] opacity-75">
+      <div class="bg-gray-500 text-white font-bold p-3 rounded-t-lg text-center">ENTREGADOS (Hoy)</div>
+      <div id="col-entregado" class="flex-1 p-3 overflow-y-auto space-y-3"></div>
+    </div>
+  </main>
+
+  <!-- Modal Stock -->
+  <div id="stock-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-lg w-full max-w-lg max-h-[80vh] overflow-y-auto">
+      <h2 class="text-2xl font-bold mb-4">Gestión Rápida de Stock</h2>
+      <div id="stock-list" class="space-y-4 mb-6"></div>
+      <button id="btn-close-stock" class="w-full bg-black text-white py-3 rounded font-bold">Cerrar</button>
+    </div>
+  </div>
+
+  <script type="module" src="./staff.js"></script>
+</body>
+</html>
