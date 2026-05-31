@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Isis Shisha Lounge | Menú Premium</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#121212', 
+                        darkCard: '#1a1a1a', 
+                        darkConcrete: '#222222', 
+                        goldPrimary: '#D4AF37', 
+                        goldHover: '#F3E5AB', 
+                        goldDeep: '#AA7C11', 
+                        champagne: '#F9F6EE',
+                        brandRed: '#A12727'
+                    },
+                    fontFamily: {
+                        cinzel: ['Cinzel', 'serif'],
+                        poppins: ['Poppins', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .bg-concrete-pattern {
+            background-color: #121212;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 0),
+                              radial-gradient(rgba(255, 255, 255, 0.015) 2px, transparent 0);
+            background-size: 32px 32px;
+            background-position: 0 0, 16px 16px;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #121212; }
+        ::-webkit-scrollbar-thumb { background: #AA7C11; border-radius: 4px; }
+        .star-spin-anim { animation: starSpin 0.3s ease-in-out; }
+        @keyframes starSpin { 0% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.3) rotate(15deg); } 100% { transform: scale(1) rotate(0deg); } }
+    </style>
+</head>
+<body class="bg-concrete-pattern text-champagne font-poppins min-h-screen selection:bg-goldPrimary selection:text-black pb-12">
+
+<header class="sticky top-0 z-50 bg-darkBg/95 backdrop-blur-md border-b border-goldDeep/30 transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-4 h-24 flex items-center justify-between">
+        <a href="#hero" class="flex items-center space-x-3 group">
+            <div class="text-goldPrimary opacity-90 text-3xl">☥</div>
+            <div class="flex flex-col">
+                <span class="font-cinzel text-xl sm:text-2xl font-black tracking-[0.15em] text-goldPrimary">ISIS</span>
+                <span class="text-[9px] tracking-[0.3em] text-goldDeep uppercase font-cinzel -mt-1">Shisha Lounge</span>
+            </div>
+        </a>
+
+        <div class="flex items-center space-x-4">
+            <button onclick="filterShishas('favorites')" class="text-goldPrimary hover:text-goldHover text-xs sm:text-sm font-bold tracking-widest uppercase font-cinzel flex items-center gap-2 border border-goldPrimary px-4 py-2 rounded-md transition-colors hover:bg-goldPrimary/10">
+                <i class="fa-solid fa-star"></i> <span class="hidden sm:inline">Favoritos</span> (<span id="fav-count-badge">0</span>)
+            </button>
+        </div>
+    </div>
+</header>
+
+<section id="hero" class="relative py-12 flex items-center justify-center border-b border-goldDeep/20">
+    <div class="relative z-10 max-w-5xl mx-auto px-4 text-center space-y-6">
+        <div class="inline-flex items-center space-x-2 border border-goldPrimary/30 px-4 py-1.5 rounded-full bg-darkCard/80">
+            <span class="w-2 h-2 rounded-full bg-goldPrimary animate-pulse"></span>
+            <span class="text-xs uppercase tracking-[0.3em] font-cinzel text-goldPrimary font-semibold">Menú Digital en Vivo</span>
+        </div>
+        <h1 class="font-cinzel text-4xl sm:text-5xl font-bold tracking-widest text-champagne leading-tight">
+            CARTA DE SABORES
+        </h1>
+        <p class="text-sm text-champagne/70 max-w-2xl mx-auto font-light leading-relaxed">
+            Navega por nuestras combinaciones exclusivas. El estado de disponibilidad se actualiza en tiempo real.
+        </p>
+    </div>
+</section>
+
+<section id="carta" class="py-12 bg-darkBg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div id="filters-container" class="flex flex-wrap justify-center gap-2 mb-12">
+            <p class="text-goldPrimary text-sm font-cinzel animate-pulse">Conectando con la pirámide...</p>
+        </div>
+
+        <div id="shisha-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+        
+        <div id="empty-favorites-msg" class="hidden text-center py-16 bg-darkCard border border-goldDeep/20 rounded-2xl mt-8">
+            <i class="fa-regular fa-star text-4xl text-goldDeep/50 mb-4"></i>
+            <h3 class="font-cinzel text-xl text-champagne">Aún no tienes favoritos</h3>
+            <p class="text-champagne/60 mt-2 font-light text-sm">Marca la estrella de las cachimbas que te gusten para guardarlas aquí.</p>
+            <button onclick="filterShishas('all')" class="mt-6 border border-goldPrimary text-goldPrimary px-6 py-2 rounded-full font-cinzel text-sm uppercase tracking-wider hover:bg-goldPrimary hover:text-black transition-all">Ver Carta Completa</button>
+        </div>
+    </div>
+</section>
+
+<div id="shisha-modal" class="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/85 backdrop-blur-md hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-darkConcrete border border-goldPrimary/40 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-[0_0_50px_rgba(212,175,55,0.15)] relative transform scale-95 transition-transform duration-300">
+        <button onclick="closeModal()" class="absolute top-4 right-4 text-champagne/60 hover:text-goldPrimary text-xl focus:outline-none transition-colors"><i class="fa-solid fa-xmark"></i></button>
+
+        <div class="p-6 sm:p-8 space-y-6">
+            <div class="flex items-center space-x-4 pr-8">
+                <div id="modal-icon" class="text-4xl text-goldPrimary bg-darkCard p-4 rounded-xl border border-goldPrimary/30 shrink-0 flex items-center justify-center"></div>
+                <div>
+                    <div id="modal-tags" class="flex flex-wrap gap-1 mb-2"></div>
+                    <h3 id="modal-title" class="text-2xl sm:text-3xl font-bold font-cinzel text-goldPrimary tracking-wider leading-tight">Nombre</h3>
+                </div>
+            </div>
+
+            <p id="modal-description" class="text-champagne/80 font-light leading-relaxed text-sm border-l-2 border-goldPrimary pl-3"></p>
+
+            <div class="border-t border-b border-goldDeep/20 py-6 space-y-4">
+                <h4 class="font-cinzel text-sm uppercase tracking-widest text-goldPrimary font-semibold mb-4 text-center">Análisis Sensorial</h4>
+                <div class="space-y-3">
+                    <div>
+                        <div class="flex justify-between text-xs text-champagne/70 font-light mb-1 uppercase tracking-widest">
+                            <span>Fuerza e Intensidad</span><span id="modal-intensity" class="text-goldPrimary font-bold">0/5</span>
+                        </div>
+                        <div class="h-1.5 w-full bg-darkCard rounded-full overflow-hidden"><div id="modal-intensity-bar" class="h-full bg-goldPrimary transition-all duration-500" style="width: 0%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs text-champagne/70 font-light mb-1 uppercase tracking-widest">
+                            <span>Nivel de Frescor</span><span id="modal-freshness" class="text-goldPrimary font-bold">0/5</span>
+                        </div>
+                        <div class="h-1.5 w-full bg-darkCard rounded-full overflow-hidden"><div id="modal-freshness-bar" class="h-full bg-goldPrimary transition-all duration-500 delay-100" style="width: 0%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs text-champagne/70 font-light mb-1 uppercase tracking-widest">
+                            <span>Densidad del Humo</span><span id="modal-smoke" class="text-goldPrimary font-bold">0/5</span>
+                        </div>
+                        <div class="h-1.5 w-full bg-darkCard rounded-full overflow-hidden"><div id="modal-smoke-bar" class="h-full bg-goldPrimary transition-all duration-500 delay-200" style="width: 0%"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-darkCard p-4 rounded-lg border border-goldDeep/10 mt-4">
+                <span class="text-[10px] text-goldDeep block uppercase tracking-widest font-cinzel mb-1">Ingredientes Clave</span>
+                <p id="modal-ingredients" class="text-champagne font-light text-sm">...</p>
+            </div>
+
+            <div class="flex pt-2">
+                <button id="modal-favorite-btn" onclick="toggleFavoriteFromModal()" class="w-full bg-goldPrimary text-black hover:bg-goldHover font-bold py-4 rounded-lg transition-all font-cinzel uppercase tracking-widest text-sm text-center flex items-center justify-center space-x-2">
+                    <i id="modal-star-icon" class="fa-regular fa-star text-lg"></i>
+                    <span id="modal-favorite-text">Guardar Favorito</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast-message" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="bg-darkConcrete border border-goldPrimary p-4 rounded-xl shadow-2xl flex items-center space-x-4 max-w-sm">
+        <span id="toast-icon" class="text-goldPrimary text-2xl"><i class="fa-solid fa-star"></i></span>
+        <div>
+            <p id="toast-title" class="text-champagne font-cinzel font-bold text-sm tracking-widest uppercase"></p>
+            <p id="toast-text" class="text-champagne/70 font-light text-xs mt-1"></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://khpocrsupatikprigpxw.supabase.co'; 
+    const SUPABASE_ANON_KEY = 'sb_publishable_Z0soHkdqh0SBjSTY-yBayA_anFNj5IB';
+    
+    function getSupabase() {
+        if(!window.supabase) throw new Error("Supabase no cargado todavía.");
+        return window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+
+    let shishasData = [];
+    let savedFavorites = [];
+    let etiquetasGlobales = new Set();
+    let currentFilter = 'all';
+
+    try {
+        const localData = localStorage.getItem('isis_shisha_favorites');
+        if (localData) savedFavorites = JSON.parse(localData);
+    } catch (e) {}
+
+    window.addEventListener('DOMContentLoaded', () => {
+        updateFavBadge();
+        setTimeout(iniciarSistema, 100);
+    });
+
+    async function iniciarSistema() {
+        await cargarDesdeSupabase();
+        
+        // --- REAL-TIME LISTENER ---
+        // Escucha en vivo los cambios en el menú y recarga la pantalla al instante.
+        const sp = getSupabase();
+        sp.channel('custom-menu-channel')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_shishas' }, payload => {
+              console.log("¡Actualización en vivo detectada!", payload);
+              cargarDesdeSupabase();
+          })
+          .subscribe();
+    }
+
+    async function cargarDesdeSupabase() {
+        try {
+            const sp = getSupabase();
+            const { data, error } = await sp.from('menu_shishas').select('*').order('name', { ascending: true });
+            if (error) throw error;
+            
+            if(!data || data.length === 0) {
+                document.getElementById('filters-container').innerHTML = '<p class="text-champagne/50">El menú está en preparación. Vuelve pronto.</p>';
+                return;
+            }
+
+            shishasData = data.map(d => ({
+                id: d.id,
+                name: d.name,
+                etiquetas: d.etiquetas ? d.etiquetas.split(',').map(e => e.trim()) : [],
+                desc: d.descripcion || "",
+                intensity: d.intensity || 3,
+                freshness: d.freshness || 3,
+                smoke: d.smoke || 3,
+                ingredients: d.ingredients || "Secreto del Lounge",
+                icon: d.icon || "fa-solid fa-cloud",
+                disponible: d.disponible
+            }));
+
+            generarFiltrosDinamicos();
+            filterShishas(currentFilter); // Mantiene el filtro en el que estábamos parados
+        } catch(e) {
+            document.getElementById('filters-container').innerHTML = '<p class="text-brandRed">Error conectando con la carta.</p>';
+        }
+    }
+
+    function generarFiltrosDinamicos() {
+        const container = document.getElementById('filters-container');
+        etiquetasGlobales.clear();
+
+        shishasData.forEach(shisha => {
+            if(shisha.etiquetas) {
+                shisha.etiquetas.forEach(tag => {
+                    if(tag) etiquetasGlobales.add(tag.toLowerCase());
+                });
+            }
+        });
+
+        let html = `<button onclick="filterShishas('all')" id="filter-all" class="filter-btn active px-5 py-2 rounded-full font-cinzel text-xs tracking-wider uppercase transition-all duration-300 border border-goldPrimary text-black bg-goldPrimary font-semibold shadow-[0_0_15px_rgba(212,175,55,0.4)]">Todas</button>`;
+        
+        Array.from(etiquetasGlobales).sort().forEach(tag => {
+            const tagBonita = tag.charAt(0).toUpperCase() + tag.slice(1);
+            html += `<button onclick="filterShishas('${tag}')" id="filter-${tag}" class="filter-btn px-5 py-2 rounded-full font-cinzel text-xs tracking-wider uppercase transition-all duration-300 border border-goldDeep/40 text-champagne/80 hover:border-goldPrimary hover:text-goldPrimary bg-darkCard">${tagBonita}</button>`;
+        });
+
+        container.innerHTML = html;
+    }
+
+    function filterShishas(category) {
+        currentFilter = category;
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.className = "filter-btn px-5 py-2 rounded-full font-cinzel text-xs tracking-wider uppercase transition-all duration-300 border border-goldDeep/40 text-champagne/80 hover:border-goldPrimary hover:text-goldPrimary bg-darkCard";
+        });
+        
+        const activeBtn = document.getElementById(`filter-${category}`);
+        if(activeBtn) {
+            activeBtn.className = "filter-btn active px-5 py-2 rounded-full font-cinzel text-xs tracking-wider uppercase transition-all duration-300 border border-goldPrimary text-black bg-goldPrimary font-semibold shadow-[0_0_15px_rgba(212,175,55,0.4)]";
+        }
+
+        const emptyMsg = document.getElementById('empty-favorites-msg');
+        emptyMsg.classList.add('hidden');
+
+        if(category === 'all') {
+            renderShishas(shishasData);
+        } else if (category === 'favorites') {
+            const filtered = shishasData.filter(s => savedFavorites.includes(s.id));
+            if(filtered.length === 0) {
+                document.getElementById('shisha-grid').innerHTML = '';
+                emptyMsg.classList.remove('hidden');
+            } else {
+                renderShishas(filtered);
+            }
+        } else {
+            const filtered = shishasData.filter(s => {
+                if(!s.etiquetas) return false;
+                const tagsMinisculas = s.etiquetas.map(t => t.toLowerCase());
+                return tagsMinisculas.includes(category);
+            });
+            renderShishas(filtered);
+        }
+    }
+
+    function renderShishas(shishas) {
+        const grid = document.getElementById('shisha-grid');
+        grid.innerHTML = '';
+        if (shishas.length === 0) return;
+
+        shishas.forEach(s => {
+            const isFav = savedFavorites.includes(s.id);
+            const starIconClass = isFav ? "fa-solid fa-star text-goldPrimary" : "fa-regular fa-star text-goldPrimary/60 group-hover:text-goldPrimary";
+            const btnBgClass = isFav ? "bg-goldPrimary/20 border-goldPrimary" : "bg-darkConcrete border-goldPrimary/30 hover:bg-goldPrimary/10";
+
+            let tagsHtml = '';
+            if(s.etiquetas) {
+                s.etiquetas.slice(0,2).forEach(t => {
+                    tagsHtml += `<span class="text-[9px] font-cinzel tracking-widest uppercase bg-darkConcrete text-goldPrimary px-2 py-1 rounded-sm border border-goldDeep/20">${t}</span>`;
+                });
+            }
+
+            const extraClassesCard = !s.disponible ? "grayscale opacity-80 pointer-events-none" : "hover:border-goldPrimary hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(212,175,55,0.1)] cursor-pointer";
+            
+            const htmlAgotadoOverlay = !s.disponible ? `
+                <div class="absolute inset-0 z-20 pointer-events-none overflow-hidden rounded-2xl">
+                    <svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+                        <line x1="100%" y1="0" x2="0" y2="100%" stroke="#A12727" stroke-width="3" opacity="0.9"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="text-[#A12727] transform -rotate-[25deg] font-cinzel font-black tracking-[0.3em] text-2xl md:text-3xl bg-[#121212]/95 px-6 py-2 border-2 border-[#A12727] shadow-[0_0_20px_rgba(161,39,39,0.5)]">AGOTADO</span>
+                    </div>
+                </div>
+            ` : '';
+
+            const card = document.createElement('div');
+            card.className = `group bg-darkCard border border-goldDeep/20 rounded-2xl p-6 transition-all duration-300 flex flex-col justify-between relative overflow-hidden ${extraClassesCard}`;
+            
+            const actionClick = s.disponible ? `onclick="openModal('${s.id}')"` : '';
+
+            card.innerHTML = `
+                ${htmlAgotadoOverlay}
+
+                <button onclick="toggleFavorite('${s.id}', event)" class="absolute top-4 right-4 w-10 h-10 rounded-xl ${btnBgClass} flex items-center justify-center transition-all duration-300 border focus:outline-none z-30 pointer-events-auto" title="Guardar en favoritos">
+                    <i class="${starIconClass} text-lg"></i>
+                </button>
+
+                <div ${actionClick}>
+                    <div class="flex justify-between items-start mb-4 pr-12">
+                        <div class="w-12 h-12 rounded-xl bg-darkConcrete flex items-center justify-center text-xl text-goldPrimary border border-goldDeep/20 group-hover:border-goldPrimary transition-colors duration-300 shadow-inner">
+                            <i class="${s.icon}"></i>
+                        </div>
+                    </div>
+                    <div class="flex gap-1 mb-3">${tagsHtml}</div>
+                    
+                    <h3 class="font-cinzel text-xl font-bold text-champagne group-hover:text-goldPrimary transition-colors tracking-wide mb-2 uppercase">${s.name}</h3>
+                    <p class="text-xs text-champagne/60 font-light line-clamp-3 mb-4 leading-relaxed">${s.desc}</p>
+                </div>
+                
+                <div ${actionClick} class="pt-4 border-t border-goldDeep/10 flex justify-between items-center text-xs">
+                    <span class="text-goldDeep font-cinzel uppercase tracking-wider group-hover:text-goldPrimary transition-colors">Saber Más & Sensaciones</span>
+                    <span class="w-8 h-8 rounded-full bg-darkConcrete text-goldPrimary flex items-center justify-center group-hover:bg-goldPrimary group-hover:text-black transition-all">
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </span>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    function toggleFavorite(id, event) {
+        if(event) event.stopPropagation();
+        
+        const index = savedFavorites.indexOf(id);
+        const s = shishasData.find(item => item.id === id);
+        let iconToAnim = event ? event.currentTarget.querySelector('i') : null;
+
+        if (index > -1) {
+            savedFavorites.splice(index, 1);
+            showToast("Eliminado", `${s.name} quitada de tu lista.`, "fa-regular fa-star");
+        } else {
+            savedFavorites.push(id);
+            showToast("Guardado", `¡${s.name} guardada en tu móvil!`, "fa-solid fa-star");
+            if(iconToAnim) {
+                iconToAnim.classList.remove('star-spin-anim');
+                void iconToAnim.offsetWidth; 
+                iconToAnim.classList.add('star-spin-anim');
+            }
+        }
+        
+        localStorage.setItem('isis_shisha_favorites', JSON.stringify(savedFavorites));
+        updateFavBadge();
+        filterShishas(currentFilter);
+    }
+
+    function updateFavBadge() {
+        const b = document.getElementById('fav-count-badge');
+        if(b) b.innerText = savedFavorites.length;
+    }
+
+    let currentSelectedShisha = null;
+    function openModal(id) {
+        const s = shishasData.find(item => item.id === id);
+        if(!s || !s.disponible) return;
+        currentSelectedShisha = s;
+
+        document.getElementById('modal-title').innerText = s.name;
+        document.getElementById('modal-description').innerText = s.desc;
+        document.getElementById('modal-icon').className = `text-4xl text-goldPrimary bg-darkCard p-4 rounded-xl border border-goldPrimary/30 shrink-0 flex items-center justify-center ${s.icon}`;
+        
+        let tagsHtml = '';
+        if(s.etiquetas) {
+            s.etiquetas.forEach(t => {
+                tagsHtml += `<span class="text-[10px] font-cinzel tracking-widest uppercase bg-darkConcrete text-goldPrimary px-2 py-1 rounded-sm border border-goldDeep/20">${t}</span>`;
+            });
+        }
+        document.getElementById('modal-tags').innerHTML = tagsHtml;
+        
+        document.getElementById('modal-intensity').innerText = `${s.intensity}/5`;
+        document.getElementById('modal-intensity-bar').style.width = `${(s.intensity/5)*100}%`;
+        document.getElementById('modal-freshness').innerText = `${s.freshness}/5`;
+        document.getElementById('modal-freshness-bar').style.width = `${(s.freshness/5)*100}%`;
+        document.getElementById('modal-smoke').innerText = `${s.smoke}/5`;
+        document.getElementById('modal-smoke-bar').style.width = `${(s.smoke/5)*100}%`;
+
+        document.getElementById('modal-ingredients').innerText = s.ingredients;
+
+        updateModalFavoriteButton(s.id);
+
+        const modal = document.getElementById('shisha-modal');
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modal.querySelector('div').classList.remove('scale-95');
+        }, 50);
+    }
+
+    function updateModalFavoriteButton(id) {
+        const isFav = savedFavorites.includes(id);
+        const icon = document.getElementById('modal-star-icon');
+        const text = document.getElementById('modal-favorite-text');
+        const btn = document.getElementById('modal-favorite-btn');
+
+        if(isFav) {
+            icon.className = "fa-solid fa-star text-goldPrimary text-lg";
+            text.innerText = "Quitar Favorito";
+            btn.className = "w-full bg-darkCard border border-goldPrimary text-goldPrimary hover:bg-goldPrimary hover:text-black font-bold py-4 rounded-lg transition-all font-cinzel uppercase tracking-widest text-sm text-center flex items-center justify-center space-x-2";
+        } else {
+            icon.className = "fa-regular fa-star text-lg";
+            text.innerText = "Guardar Favorito";
+            btn.className = "w-full bg-goldPrimary text-black hover:bg-goldHover font-bold py-4 rounded-lg transition-all font-cinzel uppercase tracking-widest text-sm text-center flex items-center justify-center space-x-2";
+        }
+    }
+
+    function toggleFavoriteFromModal() {
+        if(currentSelectedShisha) {
+            toggleFavorite(currentSelectedShisha.id);
+            updateModalFavoriteButton(currentSelectedShisha.id);
+        }
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('shisha-modal');
+        modal.classList.add('opacity-0');
+        modal.querySelector('div').classList.add('scale-95');
+        setTimeout(() => { modal.classList.add('hidden'); }, 300);
+    }
+
+    function showToast(title, body, iconClass) {
+        const toast = document.getElementById('toast-message');
+        document.getElementById('toast-icon').innerHTML = `<i class="${iconClass}"></i>`;
+        document.getElementById('toast-title').innerText = title;
+        document.getElementById('toast-text').innerText = body;
+
+        toast.classList.remove('translate-y-20', 'opacity-0');
+        setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 3000);
+    }
+</script>
+
+</body>
+</html>
