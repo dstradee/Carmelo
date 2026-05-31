@@ -18,6 +18,20 @@ const cartBar = document.getElementById('cart-bar');
 
 // INICIALIZACIÓN
 async function init() {
+  const urlParams = new URLSearchParams(window.location.search);
+  
+  if (urlParams.get('order_id')) {
+    orderId = urlParams.get('order_id');
+    localStorage.setItem('order_id', orderId);
+    window.history.replaceState({}, document.title, window.location.pathname); 
+    
+    // Al volver de Stripe con éxito, pasamos a preparando
+    await supabase.from('pedidos').update({ estado: 'preparando' }).eq('id', orderId);
+  } else if (urlParams.get('cancel')) {
+    alert("El pago fue cancelado. Puedes volver a intentarlo.");
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
   if (orderId) {
     showStatusView();
     listenToOrderUpdates(orderId);
@@ -34,7 +48,6 @@ async function loadProducts() {
   const { data: productos, error } = await supabase.from('productos').select('*').eq('disponible', true);
   if (error) return console.error(error);
   
-  // He añadido el renderizado opcional de imagen y descripción que añadimos en BD
   productList.innerHTML = productos.map(p => `
     <div class="flex justify-between items-center p-4 border rounded-lg bg-gray-50" id="prod-${p.id}">
       <div class="flex gap-4 items-center">
@@ -52,7 +65,7 @@ async function loadProducts() {
 
 // LÓGICA DE INGREDIENTES
 window.openProductModal = async (id, nombre, precio) => {
-  currentProduct = { id, nombre, precio };
+  currentProduct = { id, nombre, precio }; 
   const { data: ingredientes } = await supabase.from('ingredientes').select('*').eq('producto_id', id);
   
   currentIngredients = ingredientes.map(ing => ({ ...ing, selected: ing.incluido_por_defecto }));
@@ -99,39 +112,61 @@ function updateCartUI() {
   document.getElementById('cart-total').innerText = total.toFixed(2);
 }
 
-// CHECKOUT (Stripe Fake/Serverless trigger)
+// CHECKOUT DINÁMICO (Vía Vercel Serverless API)
 document.getElementById('btn-checkout').onclick = async () => {
-  const email = prompt("Introduce tu email para enviarte el recibo y recuperar tu pedido en caso de cierre:");
+  const email = prompt("Introduce tu email para tu recibo y pedido:");
   if (!email) return;
+
+  // Deshabilitar botón para evitar dobles clics
+  const btn = document.getElementById('btn-checkout');
+  btn.innerText = "Procesando...";
+  btn.disabled = true;
 
   const total = cart.reduce((sum, item) => sum + parseFloat(item.product.precio), 0);
   
-  const isPaid = confirm(`Simulando Pasarela Stripe (Apple/Google Pay).\nTotal: ${total.toFixed(2)}€\n¿Confirmar pago?`);
-  
-  if (isPaid) {
-    const { data: order, error } = await supabase.from('pedidos').insert({
-      email, total, stripe_pi_id: 'pi_fake_' + Date.now(), estado: 'preparando'
+  // 1. Crear el pedido en Supabase con estado "pendiente"
+  const { data: order, error } = await supabase.from('pedidos').insert({
+    email, total, estado: 'pendiente' 
+  }).select().single();
+
+  if (error) {
+    btn.innerText = "Pagar"; btn.disabled = false;
+    return alert("Error al registrar el pedido.");
+  }
+
+  // 2. Insertar los items e ingredientes 
+  for (let item of cart) {
+    const { data: oi } = await supabase.from('pedido_items').insert({
+      pedido_id: order.id, producto_id: item.product.id, nombre_snapshot: item.product.nombre
     }).select().single();
-
-    for (let item of cart) {
-      const { data: oi } = await supabase.from('pedido_items').insert({
-        pedido_id: order.id, producto_id: item.product.id, nombre_snapshot: item.product.nombre
-      }).select().single();
-      
-      const customIngs = item.ingredients.map(ing => ({
-        pedido_item_id: oi.id, ingrediente_id: ing.id, nombre_snapshot: ing.nombre, incluido: ing.selected
-      }));
-      await supabase.from('ingredientes_personalizados').insert(customIngs);
-    }
-
-    orderId = order.id;
-    localStorage.setItem('order_id', orderId);
-    cart = [];
-    updateCartUI();
     
-    showStatusView();
-    fetchOrderStatus(orderId);
-    listenToOrderUpdates(orderId);
+    const customIngs = item.ingredients.map(ing => ({
+      pedido_item_id: oi.id, ingrediente_id: ing.id, nombre_snapshot: ing.nombre, incluido: ing.selected
+    }));
+    if (customIngs.length > 0) await supabase.from('ingredientes_personalizados').insert(customIngs);
+  }
+
+  // 3. Llamada al backend para generar URL de Stripe
+  try {
+    const response = await fetch('/api/create-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        items: cart, 
+        email: email,
+        orderId: order.id 
+      })
+    });
+
+    const sessionData = await response.json();
+    
+    if (sessionData.error) throw new Error(sessionData.error);
+    if (sessionData.url) {
+      window.location.href = sessionData.url; // Redirigir a Stripe
+    }
+  } catch (err) {
+    alert("Error conectando con la pasarela de pago: " + err.message);
+    btn.innerText = "Pagar"; btn.disabled = false;
   }
 };
 
@@ -151,7 +186,12 @@ function updateStatusUI(order) {
   const antiScreen = document.getElementById('anti-screenshot');
   const enjoyMsg = document.getElementById('enjoy-msg');
 
-  if (order.estado === 'preparando') {
+  if (order.estado === 'pendiente') {
+    badge.innerText = 'PENDIENTE DE PAGO 💳';
+    badge.className = 'px-6 py-2 rounded-full text-white font-bold text-xl mb-6 bg-red-500';
+    antiScreen.classList.add('hidden');
+  }
+  else if (order.estado === 'preparando') {
     badge.innerText = 'PREPARANDO 🧑‍🍳';
     badge.className = 'px-6 py-2 rounded-full text-white font-bold text-xl mb-6 bg-yellow-500';
     antiScreen.classList.add('hidden');
@@ -160,10 +200,16 @@ function updateStatusUI(order) {
     badge.innerText = 'LISTO PARA RECOGER 🍔';
     badge.className = 'px-6 py-2 rounded-full text-white font-bold text-xl mb-6 bg-green-500';
     
+    antiScreen.innerHTML = `
+      <p class="text-sm text-gray-500 mb-1">Mantén esta pantalla abierta (Hora anti-fraude)</p>
+      <p id="live-clock" class="text-5xl font-mono text-gray-800 font-bold mt-4"></p>
+    `;
     antiScreen.classList.remove('hidden');
+
     clearInterval(clockInterval);
     clockInterval = setInterval(() => {
-      document.getElementById('live-clock').innerText = new Date().toLocaleTimeString();
+      const clockEl = document.getElementById('live-clock');
+      if (clockEl) clockEl.innerText = new Date().toLocaleTimeString();
     }, 1000);
   } 
   else if (order.estado === 'entregado') {
@@ -212,21 +258,17 @@ function listenToOrderUpdates(id) {
 function listenToStockUpdates() {
   supabase.channel('public:productos')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'productos' }, payload => {
-      
-      // Intercepta si el staff ha creado un plato nuevo desde el KDS
       if (payload.eventType === 'INSERT') {
         if (payload.new.disponible) loadProducts();
       } 
-      // Intercepta si el staff lo activa/desactiva
       else if (payload.eventType === 'UPDATE') {
         const prodDiv = document.getElementById(`prod-${payload.new.id}`);
         if (prodDiv && !payload.new.disponible) {
-          prodDiv.remove(); // Oculta instantáneo
+          prodDiv.remove(); 
         } else if (!prodDiv && payload.new.disponible) {
-          loadProducts(); // Reaparece recargando todo
+          loadProducts(); 
         }
       }
-      
     }).subscribe();
 }
 
