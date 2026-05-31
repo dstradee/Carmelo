@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reserva - Isis Shisha</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-dark': '#121212',
+                        'brand-gray': '#1A1A1A',
+                        'brand-gold': '#D4AF37', 
+                        'brand-champagne': '#F7E7CE',
+                        'brand-text': '#E5E5E5'
+                    },
+                    fontFamily: {
+                        'cinzel': ['Cinzel', 'serif'],
+                        'poppins': ['Poppins', 'sans-serif']
+                    },
+                    boxShadow: {
+                        'gold-glow': '0 0 20px rgba(212, 175, 55, 0.2), 0 0 40px rgba(212, 175, 55, 0.1)',
+                        'gold-glow-hover': '0 0 25px rgba(212, 175, 55, 0.4), 0 0 50px rgba(212, 175, 55, 0.2)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style> 
+        body { margin: 0; padding: 0; background-color: #121212; color: #E5E5E5; }
+        * { border-radius: 2px !important; }
+        
+        input[type="date"]::-webkit-calendar-picker-indicator { 
+            filter: invert(0.8) sepia(1) saturate(5) hue-rotate(5deg); 
+            cursor: pointer; 
+        }
+        
+        /* Evitar que el autocompletado de Chrome ponga fondo blanco */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus, 
+        input:-webkit-autofill:active{
+            -webkit-box-shadow: 0 0 0 30px #1A1A1A inset !important;
+            -webkit-text-fill-color: #D4AF37 !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+
+        /* Ajustes inyectados en JS sin romper el código original */
+        .text-blue-500 { color: #F7E7CE !important; } 
+        .text-green-500 { color: #E5E5E5 !important; } 
+    </style>
+</head>
+<body class="bg-brand-dark text-brand-text font-poppins relative">
+
+    <header class="bg-brand-dark text-brand-text py-10 px-4 text-center border-b border-brand-gold flex flex-col items-center shadow-gold-glow">
+        
+        <!-- LOGO EN TEXTO (Sustituye a la imagen antigua) -->
+        <div class="text-brand-gold opacity-80 text-5xl mb-3">☥</div>
+        <h1 class="text-5xl md:text-6xl font-cinzel uppercase tracking-widest text-brand-gold drop-shadow-[0_0_15px_rgba(212,175,55,0.4)]">Isis Shisha</h1>
+        <p class="mt-3 font-poppins font-light uppercase text-sm md:text-base text-brand-champagne tracking-[0.2em]">Reserva tu mesa al instante</p>
+
+    </header>
+
+    <main class="max-w-xl mx-auto pt-10 px-4 pb-12">
+        <div class="bg-brand-gray p-8 md:p-10 border border-[#2A2A2A] shadow-gold-glow">
+            
+            <div class="flex flex-col md:flex-row justify-between md:items-center border-b border-[#333] pb-6 mb-8 gap-6 md:gap-0">
+                <h2 id="titulo-principal" class="text-3xl font-cinzel uppercase text-brand-gold text-center md:text-left tracking-widest font-semibold">Reservar</h2>
+                <button id="btn-cambiar-vista" onclick="cambiarVista()" class="text-xs font-poppins font-semibold bg-transparent text-brand-gold border border-brand-gold px-6 py-3 uppercase transition-all duration-300 w-full md:w-auto hover:bg-brand-gold hover:text-brand-dark tracking-[0.15em]">
+                    Modificar Reserva
+                </button>
+            </div>
+
+            <div id="vista-suspendida" class="hidden text-center py-10 space-y-4">
+                <div class="text-6xl mb-4 opacity-70">⏳</div>
+                <h3 class="text-2xl font-cinzel uppercase text-brand-gold">Servicio No Disponible</h3>
+                <p class="text-brand-text font-light">El sistema de reservas online se encuentra temporalmente desactivado para este local.</p>
+            </div>
+
+            <div id="vista-reservar" class="space-y-6 text-sm md:text-base">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block mb-2 text-brand-champagne uppercase tracking-[0.15em] text-xs font-light">Día</label>
+                        <input type="date" id="input-fecha" onchange="actualizarHoras('input-fecha', 'input-hora')" required class="w-full bg-brand-dark border border-[#333] p-3 h-12 text-brand-text focus:outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-colors font-poppins">
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-brand-champagne uppercase tracking-[0.15em] text-xs font-light">Hora</label>
+                        <select id="input-hora" required class="w-full bg-brand-dark border border-[#333] p-3 h-12 text-brand-text focus:outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-colors font-poppins"></select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-brand-champagne uppercase tracking-[0.15em] text-xs font-light">¿Dónde quieres fumar?</label>
+                    <select id="input-zona" required class="w-full bg-brand-dark border border-[#333] p-3 text-brand-text focus:outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-colors font-poppins">
+                        <option value="Interior">Interior Lounge</option>
+                        <option value="Terraza">Terraza Exclusiva</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-brand-champagne uppercase tracking-[0.15em] text-xs font-light">Nombre Completo <span class="text-brand-gold">*</span></label>
+                    <input type="text" id="input-nombre" placeholder="Ej: Pablo Gómez" oninput="this.value = this.value.replace(/[0-9]/g, '')" required class="w-full bg-brand-dark border border-[#333] p-4 text-brand-text placeholder-[#555] focus:outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-colors font-poppins">
+                </div>
+                <div>
+                    <label class="block mb-2 text-brand-champagne uppercase tracking-[0.15em] text-xs font-light">Teléfono <span class="text-brand-gold">*</span></label>
+                    <input type="tel" id="input-telefono" placeholder="Ej: 600123456" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required class="w-full bg-brand-dark border border-[#333] p-4 text-brand-text placeholder-[#555] focus:outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-colors font-poppins">
+                </div>
+
+                <button onclick="procesarReserva()" id="btn-reservar" class="mt-8 w-full bg-brand-gold text-brand-dark font-cinzel font-bold text-2xl py-5 shadow-gold-glow uppercase active:scale-[0.98] transition-all duration-300 tracking-widest border-none hover:shadow-gold-glow-hover hover:bg-[#E5C354]">
+                    Confirmar Reserva
+                </button>
+            </div>
+
+            <div id="vista-modificar" class="hidden space-y-6">
+                <p class="text-sm text-brand-text font-light mb-4 text-center md:text-left leading-relaxed">Introduce tu identificador de reserva <b>todo junto</b> (sin espacios ni tildes):</p>
+                <div>
+                    <input type="text" id="mod-identificador" oninput="colorearTexto(this.value)" placeholder="PABLOGOMEZ600123456ABC" class="w-full bg-brand-dark border border-[#333] p-4 text-brand-text focus:outline-none font-poppins uppercase text-center tracking-[0.3em] focus:border-brand-gold focus:ring-1 focus:ring-brand-gold text-lg transition-colors">
+                </div>
+                <div class="bg-brand-dark p-4 border border-[#333] text-center text-xl md:text-2xl font-poppins tracking-[0.2em] break-words min-h-[70px] flex items-center justify-center">
+                    <span id="preview-colores" class="text-[#555] text-sm font-poppins font-light tracking-normal">Tu código se pintará aquí...</span>
+                </div>
+                <button id="btn-buscar" onclick="buscarReserva()" class="mt-6 w-full bg-brand-gold text-brand-dark font-cinzel font-bold text-2xl py-5 shadow-gold-glow uppercase active:scale-[0.98] transition-all tracking-widest border-none hover:bg-[#E5C354]">
+                    Buscar mi reserva
+                </button>
+            </div>
+
+            <div id="vista-gestion" class="hidden space-y-6">
+                <div class="bg-brand-dark p-6 border border-brand-gold text-center mb-6">
+                    <p class="text-xs text-brand-champagne font-light uppercase tracking-[0.2em] mb-2">Reserva Actual</p>
+                    <p class="text-3xl font-cinzel text-brand-gold tracking-widest uppercase">Hola <span id="gest-nombre"></span></p>
+                    <p class="text-sm text-brand-text font-light mt-2 tracking-widest">ZONA: <span id="gest-zona" class="uppercase text-white font-semibold"></span></p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block mb-2 text-brand-champagne uppercase tracking-[0.15em] text-xs font-light">Cambiar Día</label>
+                        <input type="date" id="gest-fecha" onchange="actualizarHoras('gest-fecha', 'gest-hora')" class="w-full bg-brand-dark border border-[#333] p-3 h-12 text-brand-text focus:outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold font-poppins">
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-brand-champagne uppercase tracking-[0.15em] text-xs font-light">Cambiar Hora</label>
+                        <select id="gest-hora" class="w-full bg-brand-dark border border-[#333] p-3 h-12 text-brand-text focus:outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold font-poppins"></select>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-4 mt-8">
+                    <button id="btn-actualizar" onclick="actualizarReserva()" class="w-full bg-brand-gold text-brand-dark font-cinzel font-bold text-xl py-4 shadow-gold-glow uppercase active:scale-[0.98] transition-all tracking-widest hover:bg-[#E5C354]">
+                        Guardar Cambios
+                    </button>
+                    <button id="btn-cancelar" onclick="cancelarReserva()" class="w-full bg-transparent text-[#E5E5E5] border border-[#555] font-poppins text-sm py-4 uppercase active:scale-[0.98] transition-all tracking-[0.15em] hover:border-red-500 hover:text-red-500">
+                        Cancelar Reserva
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- MODAL RESERVA HECHA -->
+    <div id="modal-identificador" class="hidden fixed inset-0 bg-[#0a0a0a]/95 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+        <div class="bg-brand-gray border border-brand-gold p-8 md:p-10 max-w-md w-full text-center shadow-[0_0_50px_rgba(212,175,55,0.15)] relative">
+            <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-brand-gold text-brand-dark w-12 h-12 flex items-center justify-center rotate-45 border border-brand-dark">
+                <span class="-rotate-45 font-cinzel font-bold text-xl">✓</span>
+            </div>
+            <h3 class="text-3xl md:text-4xl font-cinzel text-brand-gold uppercase mb-4 tracking-widest mt-4">Confirmada</h3>
+            <p class="font-poppins font-light text-brand-text text-sm md:text-base mb-8 leading-relaxed">Guarda este identificador, hazle una captura de pantalla para poder modificar o cancelar tu reserva:</p>
+            <div class="text-2xl md:text-3xl font-poppins bg-brand-dark p-6 border border-[#333] tracking-[0.2em] break-words mb-8 flex justify-center flex-wrap">
+                <span id="id-nombre" class="text-brand-gold font-semibold"></span><span id="id-tel" class="text-brand-champagne"></span><span id="id-letras" class="text-brand-text"></span>
+            </div>
+            <button onclick="copiarAlPortapapeles()" id="btn-copiar" class="md:hidden w-full bg-brand-champagne text-brand-dark font-poppins font-semibold text-lg py-4 mb-4 uppercase active:scale-[0.98] transition-all tracking-[0.15em]">
+                Copiar ID
+            </button>
+            <button onclick="window.location.reload()" class="w-full bg-transparent text-brand-gold border border-brand-gold font-cinzel text-lg py-4 uppercase active:scale-[0.98] transition-all tracking-widest hover:bg-brand-gold hover:text-brand-dark">
+                Cerrar y Volver
+            </button>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- LÓGICA DE JAVASCRIPT (NUEVA VERSIÓN INTACTA)                        -->
+    <!-- =================================================================== -->
+    <script>
+        let bloqueosGlobales = [];
+        let diasCerradosGlobales = [];
+        let horariosGlobales = [];      
+        let bloqueosHorasGlobales = []; 
+        let miReservaActual = null;
+        let miZonaActual = null;
+
+        function copiarAlPortapapeles() {
+            const nombre = document.getElementById('id-nombre').innerText;
+            const tel = document.getElementById('id-tel').innerText;
+            const letras = document.getElementById('id-letras').innerText;
+            navigator.clipboard.writeText(nombre + tel + letras).then(() => {
+                const btn = document.getElementById('btn-copiar');
+                btn.innerText = "¡COPIADO!";
+                btn.classList.replace('bg-brand-champagne', 'bg-brand-gold');
+                setTimeout(() => { btn.innerText = "Copiar ID"; btn.classList.replace('bg-brand-gold', 'bg-brand-champagne'); }, 2000);
+            }).catch(err => { alert("❌ No se pudo copiar. Haz una captura de pantalla."); });
+        }
+
+        function normalizarTexto(str) {
+            if(!str) return '';
+            return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        }
+
+        function colorearTexto(val) {
+            val = normalizarTexto(val);
+            const preview = document.getElementById('preview-colores');
+            if(val === "") { preview.innerHTML = '<span class="text-[#555] font-poppins font-light text-sm tracking-normal">Tu código se pintará aquí...</span>'; return; }
+            const regex = /^([A-Z]*)([0-9]*)([A-Z]*)$/;
+            const match = val.match(regex);
+            if (match) { preview.innerHTML = `<span class="text-brand-gold font-semibold">${match[1]||''}</span><span class="text-blue-500">${match[2]||''}</span><span class="text-green-500">${match[3]||''}</span>`; } else { preview.innerHTML = val; }
+        }
+
+        function cambiarVista() {
+            const vRes = document.getElementById('vista-reservar');
+            const vMod = document.getElementById('vista-modificar');
+            const vGest = document.getElementById('vista-gestion');
+            const titulo = document.getElementById('titulo-principal');
+            const btn = document.getElementById('btn-cambiar-vista');
+
+            if (!vRes.classList.contains('hidden')) {
+                vRes.classList.add('hidden'); vMod.classList.remove('hidden'); titulo.innerText = "Tu Reserva"; btn.innerText = "Volver a Reservar";
+            } else {
+                vRes.classList.remove('hidden'); vMod.classList.add('hidden'); vGest.classList.add('hidden'); titulo.innerText = "Reservar"; btn.innerText = "Modificar Reserva";
+            }
+        }
+
+        function actualizarHoras(idFecha, idHora) {
+            const fechaInput = document.getElementById(idFecha);
+            const selectHora = document.getElementById(idHora);
+            if (!fechaInput || !selectHora) return;
+
+            let ahora = new Date();
+            if (ahora.getHours() >= 23) { ahora.setDate(ahora.getDate() + 1); ahora.setHours(0, 0, 0, 0); }
+
+            const year = ahora.getFullYear();
+            const month = String(ahora.getMonth() + 1).padStart(2, '0');
+            const day = String(ahora.getDate()).padStart(2, '0');
+            const fechaMinima = `${year}-${month}-${day}`;
+            
+            fechaInput.min = fechaMinima;
+            if (!fechaInput.value || fechaInput.value < fechaMinima) { fechaInput.value = fechaMinima; }
+
+            const fechaSeleccionada = fechaInput.value;
+            const fechaDate = new Date(fechaSeleccionada + 'T00:00:00'); 
+            const diaSemana = fechaDate.getDay().toString();
+
+            let estaCerradoSemanal = diasCerradosGlobales.includes(diaSemana);
+            let estaBloqueado = bloqueosGlobales.some(b => b.fecha === fechaSeleccionada && b.zona === 'Ambas');
+
+            if (estaCerradoSemanal || estaBloqueado) {
+                selectHora.innerHTML = '<option value="">⛔ CERRADO POR DESCANSO</option>';
+                return;
+            }
+
+            const horaReal = new Date(); 
+            const hoyRealIso = `${horaReal.getFullYear()}-${String(horaReal.getMonth() + 1).padStart(2, '0')}-${String(horaReal.getDate()).padStart(2, '0')}`;
+            let esHoyReal = (fechaSeleccionada === hoyRealIso);
+            let opcionesHTML = "";
+
+            const horarioDia = horariosGlobales.find(h => h.dia_semana.toString() === diaSemana);
+
+            function timeToMins(t) {
+                if(!t) return null;
+                let p = t.split(':');
+                return parseInt(p[0]) * 60 + parseInt(p[1]);
+            }
+
+            for(let h = 0; h <= 23; h++) {
+                let minutosPosibles = ['00', '15', '30', '45'];
+                for(let m of minutosPosibles) {
+                    let timeEnMins = (h * 60) + parseInt(m);
+                    let minutosAhora = (horaReal.getHours() * 60) + horaReal.getMinutes();
+                    
+                    if (esHoyReal && timeEnMins <= minutosAhora) continue;
+
+                    if (horariosGlobales.length > 0) {
+                        if (!horarioDia) continue; 
+                        
+                        let inT1 = false; let inT2 = false;
+                        
+                        let a1M = timeToMins(horarioDia.apertura_1); let c1M = timeToMins(horarioDia.cierre_1);
+                        if (a1M !== null && c1M !== null && timeEnMins >= a1M && timeEnMins <= c1M) inT1 = true;
+                        
+                        let a2M = timeToMins(horarioDia.apertura_2); let c2M = timeToMins(horarioDia.cierre_2);
+                        if (a2M !== null && c2M !== null && timeEnMins >= a2M && timeEnMins <= c2M) inT2 = true;
+
+                        if (!inT1 && !inT2) continue;
+                    } else {
+                        if(h < 8 || (h === 23 && m !== '00')) continue;
+                    }
+
+                    let bloqueadoHora = bloqueosHorasGlobales.some(b => {
+                        if (b.fecha !== fechaSeleccionada) return false;
+                        let bIni = timeToMins(b.hora_inicio);
+                        let bFin = timeToMins(b.hora_fin);
+                        return (timeEnMins >= bIni && timeEnMins <= bFin);
+                    });
+                    if (bloqueadoHora) continue; 
+
+                    let horaFormateada = h < 10 ? '0' + h : h; 
+                    opcionesHTML += `<option value="${horaFormateada}:${m}">${horaFormateada}:${m}</option>`;
+                }
+            }
+            
+            if (opcionesHTML === "") opcionesHTML = `<option value="">Cerrado / Sin horas</option>`;
+            selectHora.innerHTML = opcionesHTML;
+        }
+
+        actualizarHoras('input-fecha', 'input-hora');
+
+        const SUPABASE_URL = 'https://khpocrsupatikprigpxw.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'sb_publishable_Z0soHkdqh0SBjSTY-yBayA_anFNj5IB';
+        const TELEGRAM_BOT_TOKEN = '8789184996:AAFV2JsCWBcXo-IhC0YYzQuEhuhWPUgHK6k';
+        const TELEGRAM_CHAT_ID = '6519651464';
+
+        function getSupabase() {
+            if(!window.supabase) throw new Error("Librería de red no lista.");
+            return window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+
+        async function prepararEntorno() {
+            try {
+                const sp = getSupabase();
+
+                const { data: config } = await sp.from('configuracion_saas').select('estado_suscripcion').eq('id', 1).single();
+                if (config && config.estado_suscripcion === 'suspendido') {
+                    document.getElementById('vista-reservar').classList.add('hidden');
+                    document.getElementById('vista-modificar').classList.add('hidden');
+                    document.getElementById('vista-gestion').classList.add('hidden');
+                    document.getElementById('btn-cambiar-vista').classList.add('hidden');
+                    document.getElementById('vista-suspendida').classList.remove('hidden');
+                    document.getElementById('titulo-principal').innerText = "Aviso";
+                    return; 
+                }
+
+                const [respBloqueos, respDias, respHorarios, respBloqueosHoras] = await Promise.all([
+                    sp.from('bloqueos').select('*'),
+                    sp.from('dias_cerrados').select('dias').eq('id', 1).single(),
+                    sp.from('horarios_semana').select('*'),
+                    sp.from('bloqueos_horas').select('*')
+                ]);
+
+                if (respBloqueos.data) bloqueosGlobales = respBloqueos.data;
+                if (respDias.data && respDias.data.dias) diasCerradosGlobales = respDias.data.dias.split(',');
+                if (respHorarios.data) horariosGlobales = respHorarios.data;
+                if (respBloqueosHoras.data) bloqueosHorasGlobales = respBloqueosHoras.data;
+
+                actualizarHoras('input-fecha', 'input-hora');
+
+            } catch (err) {
+                console.warn("Fallo de red conectando con BD de configuración. Modo offline visual.");
+            }
+        }
+
+        async function procesarReserva() {
+            const fecha = document.getElementById('input-fecha').value;
+            const hora = document.getElementById('input-hora').value;
+            const zona = document.getElementById('input-zona').value;
+            const nombre = document.getElementById('input-nombre').value.trim();
+            const telefono = document.getElementById('input-telefono').value.trim();
+
+            if(!fecha || !hora || !nombre || !telefono) return alert("⚠️ Rellena tu Nombre y Teléfono obligatoriamente.");
+
+            let zonaBloqueada = bloqueosGlobales.find(b => b.fecha === fecha && (b.zona === 'Ambas' || b.zona === zona));
+            if (zonaBloqueada) {
+                return alert(`❌ Lo sentimos, la zona de ${zona} se encuentra cerrada por evento o festivo el día ${fecha}.`);
+            }
+
+            const btn = document.getElementById('btn-reservar');
+            btn.innerHTML = 'Enviando...'; btn.disabled = true;
+
+            const letrasAleatorias = Math.random().toString(36).substring(2, 5).toUpperCase();
+            const nombreLimpio = normalizarTexto(nombre);
+            const identificadorCompleto = `${nombreLimpio}${telefono}${letrasAleatorias}`;
+
+            try {
+                const sp = getSupabase();
+                const msg = `👑 *NUEVA RESERVA ISIS SHISHA* 👑\n👤 *Nombre:* ${nombre}\n📞 *Tlf:* ${telefono}\n📅 *Día:* ${fecha}\n⏰ *Hora:* ${hora}\n📍 *Zona:* ${zona}\n🔑 *ID:* ${identificadorCompleto}`;
+                fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: msg, parse_mode: 'Markdown' }) });
+
+                const { data: mesasZona, error: errMesas } = await sp.from('mesas').select('id').eq('zona', zona);
+                if (errMesas) throw errMesas;
+
+                if (!mesasZona || mesasZona.length === 0) {
+                    alert("❌ No hay mesas creadas en esa zona en la Base de Datos.");
+                    btn.innerHTML = 'Confirmar Reserva'; btn.disabled = false; return;
+                }
+
+                const { data: reservasDia } = await sp.from('reservas').select('mesa_id, hora_inicio').eq('fecha', fecha);
+                const horaSol = new Date(`${fecha}T${hora}:00`);
+                let mesaAsignada = (mesasZona || []).find(m => {
+                    const reservasMesa = (reservasDia || []).filter(r => r.mesa_id === m.id);
+                    return !reservasMesa.some(r => Math.abs((horaSol - new Date(`${fecha}T${r.hora_inicio}`)) / 60000) < 150);
+                });
+
+                if (!mesaAsignada) {
+                    alert(`❌ Lo sentimos, no quedan mesas libres en ${zona} a esa hora.`);
+                    btn.innerHTML = 'Confirmar Reserva'; btn.disabled = false; return;
+                }
+
+                const { error: insertError } = await sp.from('reservas').insert([{ mesa_id: mesaAsignada.id, nombre_cliente: nombre, telefono_cliente: telefono, fecha: fecha, hora_inicio: hora + ':00', codigo_secreto: letrasAleatorias }]);
+
+                if (insertError) { alert("❌ Fallo en la BD al guardar."); btn.innerHTML = 'Confirmar Reserva'; btn.disabled = false; return; }
+
+                document.getElementById('id-nombre').innerText = nombreLimpio;
+                document.getElementById('id-tel').innerText = telefono;
+                document.getElementById('id-letras').innerText = letrasAleatorias;
+                document.body.style.overflow = 'hidden';
+                document.getElementById('modal-identificador').classList.remove('hidden');
+
+            } catch (err) { alert("❌ Error de conexión al hacer la reserva."); btn.innerHTML = 'Confirmar Reserva'; btn.disabled = false; }
+        }
+
+        async function buscarReserva() {
+            const inputVal = normalizarTexto(document.getElementById('mod-identificador').value);
+            if(!inputVal) return alert("⚠️ Introduce tu identificador.");
+            const btn = document.getElementById('btn-buscar'); btn.innerHTML = 'Buscando...'; btn.disabled = true;
+
+            try {
+                const sp = getSupabase();
+                const { data: reservas, error: errorBD } = await sp.from('reservas').select('*');
+                if(errorBD) throw errorBD; 
+                const { data: mesas } = await sp.from('mesas').select('id, zona');
+
+                const reservaEncontrada = (reservas || []).find(r => normalizarTexto(r.nombre_cliente) + normalizarTexto(r.telefono_cliente) + normalizarTexto(r.codigo_secreto) === inputVal);
+
+                if(!reservaEncontrada) { alert("❌ No hemos encontrado tu reserva. Comprueba el código."); btn.innerHTML = 'Buscar mi reserva'; btn.disabled = false; return; }
+
+                miReservaActual = reservaEncontrada;
+                const mesaAsignada = mesas.find(m => m.id === miReservaActual.mesa_id);
+                miZonaActual = mesaAsignada ? mesaAsignada.zona : 'Sin Zona';
+
+                document.getElementById('gest-nombre').innerText = miReservaActual.nombre_cliente;
+                document.getElementById('gest-zona').innerText = miZonaActual;
+                document.getElementById('vista-modificar').classList.add('hidden');
+                document.getElementById('vista-gestion').classList.remove('hidden');
+                document.getElementById('gest-fecha').value = miReservaActual.fecha;
+                actualizarHoras('gest-fecha', 'gest-hora');
+                setTimeout(() => { document.getElementById('gest-hora').value = miReservaActual.hora_inicio.substring(0,5); }, 100);
+
+            } catch (error) { alert("❌ Fallo conectando a Supabase."); }
+            btn.innerHTML = 'Buscar mi reserva'; btn.disabled = false;
+        }
+
+        async function actualizarReserva() {
+            const nuevaFecha = document.getElementById('gest-fecha').value;
+            const nuevaHora = document.getElementById('gest-hora').value;
+            if(!nuevaFecha || !nuevaHora) return;
+
+            let zonaBloqueada = bloqueosGlobales.find(b => b.fecha === nuevaFecha && (b.zona === 'Ambas' || b.zona === miZonaActual));
+            if (zonaBloqueada) return alert(`❌ Lo sentimos, la zona está cerrada el ${nuevaFecha}.`);
+
+            const btn = document.getElementById('btn-actualizar'); btn.innerHTML = 'Guardando...'; btn.disabled = true;
+
+            try {
+                const sp = getSupabase();
+                const { data: mesasZona } = await sp.from('mesas').select('id').eq('zona', miZonaActual);
+                const { data: reservasDia } = await sp.from('reservas').select('id, mesa_id, hora_inicio').eq('fecha', nuevaFecha);
+                
+                const horaSol = new Date(`${nuevaFecha}T${nuevaHora}:00`);
+                let nuevaMesa = mesasZona.find(m => {
+                    const reservasMesa = (reservasDia || []).filter(r => r.mesa_id === m.id && r.id !== miReservaActual.id);
+                    return !reservasMesa.some(r => Math.abs((horaSol - new Date(`${nuevaFecha}T${r.hora_inicio}`)) / 60000) < 150);
+                });
+
+                if(!nuevaMesa) { alert(`❌ No hay mesas libres en ${miZonaActual} para esa nueva hora.`); btn.innerHTML = 'Guardar Cambios'; btn.disabled = false; return; }
+
+                await sp.from('reservas').update({ fecha: nuevaFecha, hora_inicio: nuevaHora + ':00', mesa_id: nuevaMesa.id }).eq('id', miReservaActual.id);
+
+                const msg = `✏️ *RESERVA MODIFICADA* ✏️\n👤 ${miReservaActual.nombre_cliente}\n🔄 *NUEVA FECHA:* ${nuevaFecha} a las ${nuevaHora}`;
+                fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: msg, parse_mode: 'Markdown' }) });
+
+                alert("✅ Tu reserva se ha actualizado."); window.location.reload();
+            } catch (e) { alert("❌ Fallo al actualizar."); btn.innerHTML = 'Guardar Cambios'; btn.disabled = false; }
+        }
+
+        async function cancelarReserva() {
+            if(!confirm("⚠️ ¿Estás seguro de que quieres cancelar tu reserva?")) return;
+            const btn = document.getElementById('btn-cancelar'); btn.innerHTML = 'Cancelando...'; btn.disabled = true;
+
+            try {
+                const sp = getSupabase();
+                await sp.from('reservas').delete().eq('id', miReservaActual.id);
+                const msg = `❌ *RESERVA CANCELADA* ❌\n👤 ${miReservaActual.nombre_cliente}\n📅 Iba a ser el ${miReservaActual.fecha}`;
+                fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: msg, parse_mode: 'Markdown' }) });
+                alert("🗑️ Tu reserva ha sido cancelada."); window.location.reload();
+            } catch (e) { alert("❌ Error al cancelar."); btn.innerHTML = 'Cancelar Reserva'; btn.disabled = false; }
+        }
+
+        setTimeout(prepararEntorno, 500);
+    </script>
+</body>
+</html>
