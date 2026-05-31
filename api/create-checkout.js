@@ -3,7 +3,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
   
-  const { items, email } = req.body; // Items format: [{ name, price, quantity, customizations }]
+  const { items, email } = req.body; 
 
   try {
     const line_items = items.map(item => ({
