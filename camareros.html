@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camareros - Isis Shisha</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-dark': '#121212',
+                        'brand-gray': '#1A1A1A',
+                        'brand-gold': '#D4AF37',
+                        'brand-gold-dark': '#AA7C11',
+                        'brand-champagne': '#F7E7CE',
+                        'brand-text': '#E5E5E5'
+                    },
+                    fontFamily: {
+                        'cinzel': ['Cinzel', 'serif'],
+                        'poppins': ['Poppins', 'sans-serif']
+                    },
+                    boxShadow: {
+                        'gold-glow': '0 0 15px rgba(212, 175, 55, 0.2)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #121212; color: #E5E5E5; margin: 0; padding: 0; }
+        * { border-radius: 2px !important; }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.8) sepia(1) saturate(5) hue-rotate(5deg); cursor: pointer; }
+    </style>
+</head>
+<body class="bg-brand-dark text-brand-text min-h-screen font-poppins pb-20">
+
+    <header class="bg-brand-gray py-5 px-4 border-b border-brand-gold sticky top-0 z-50">
+        <div class="flex justify-between items-center mb-5 max-w-4xl mx-auto">
+            <h1 class="text-2xl font-cinzel uppercase text-brand-gold tracking-widest font-semibold">Isis Shisha</h1>
+            <span id="estado" class="text-brand-champagne font-light text-xs uppercase tracking-widest border border-brand-champagne px-2 py-1">Cargando...</span>
+        </div>
+        
+        <div class="flex gap-3 max-w-4xl mx-auto">
+            <button onclick="verPestaña('aforo')" id="tab-aforo" class="flex-1 bg-brand-gold text-brand-dark font-cinzel font-bold py-3 uppercase text-sm tracking-[0.2em] transition-colors">
+                Aforo Vivo
+            </button>
+            <button onclick="verPestaña('reservas')" id="tab-reservas" class="flex-1 bg-transparent text-[#888] font-cinzel py-3 uppercase text-sm tracking-[0.2em] border border-[#333] transition-colors">
+                Lista Reservas
+            </button>
+        </div>
+    </header>
+
+    <main class="p-4 max-w-4xl mx-auto mt-4">
+        
+        <div id="vista-aforo" class="space-y-6 block">
+            <!-- INTERIOR -->
+            <div class="bg-brand-gray p-8 border border-[#2A2A2A] text-center shadow-gold-glow">
+                <h2 class="text-3xl font-cinzel text-brand-gold uppercase mb-2 tracking-widest">Interior Lounge</h2>
+                <p class="text-brand-champagne font-light text-xs tracking-[0.2em] uppercase mb-6">Mesas Libres Ahora</p>
+                
+                <div class="text-7xl font-poppins font-light mb-8 text-brand-text" id="num-interior">
+                    - <span class="text-3xl text-[#555]">/ -</span>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="ocupar('Interior')" id="btn-oc-int" class="bg-[#2A1010] active:bg-[#1A0A0A] text-[#E5E5E5] border border-[#4A1D1D] text-lg font-cinzel py-5 uppercase transition-all tracking-[0.15em]">
+                        Ocupar
+                    </button>
+                    <button onclick="liberar('Interior')" id="btn-lib-int" class="bg-[#102A18] active:bg-[#0A1A0F] text-[#E5E5E5] border border-[#1D4A2B] text-lg font-cinzel py-5 uppercase transition-all tracking-[0.15em]">
+                        Liberar
+                    </button>
+                </div>
+            </div>
+
+            <!-- TERRAZA -->
+            <div class="bg-brand-gray p-8 border border-[#2A2A2A] text-center shadow-gold-glow">
+                <h2 class="text-3xl font-cinzel text-brand-champagne uppercase mb-2 tracking-widest">Terraza Exclusiva</h2>
+                <p class="text-[#888] font-light text-xs tracking-[0.2em] uppercase mb-6">Mesas Libres Ahora</p>
+                
+                <div class="text-7xl font-poppins font-light mb-8 text-brand-text" id="num-terraza">
+                    - <span class="text-3xl text-[#555]">/ -</span>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="ocupar('Terraza')" id="btn-oc-ter" class="bg-[#2A1010] active:bg-[#1A0A0A] text-[#E5E5E5] border border-[#4A1D1D] text-lg font-cinzel py-5 uppercase transition-all tracking-[0.15em]">
+                        Ocupar
+                    </button>
+                    <button onclick="liberar('Terraza')" id="btn-lib-ter" class="bg-[#102A18] active:bg-[#0A1A0F] text-[#E5E5E5] border border-[#1D4A2B] text-lg font-cinzel py-5 uppercase transition-all tracking-[0.15em]">
+                        Liberar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="vista-reservas" class="hidden space-y-6">
+            <div class="bg-brand-gray p-6 border border-[#2A2A2A]">
+                <label class="block text-brand-champagne font-light mb-3 uppercase text-xs tracking-[0.2em]">Selecciona Fecha</label>
+                <input type="date" id="input-fecha-lista" onchange="descargarListaReservas()" class="w-full bg-brand-dark border border-[#333] p-4 text-brand-text font-poppins font-light focus:outline-none focus:border-brand-gold transition-colors">
+            </div>
+
+            <div id="caja-reservas" class="space-y-4 mt-6 font-poppins">
+                <p class="text-center font-light text-[#666] tracking-wide">Haz clic en el calendario para buscar reservas...</p>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        function verPestaña(cual) {
+            if (cual === 'aforo') {
+                document.getElementById('vista-aforo').classList.remove('hidden');
+                document.getElementById('vista-reservas').classList.add('hidden');
+                document.getElementById('tab-aforo').className = "flex-1 bg-brand-gold text-brand-dark font-cinzel font-bold py-3 uppercase text-sm tracking-[0.2em] transition-colors";
+                document.getElementById('tab-reservas').className = "flex-1 bg-transparent text-[#888] font-cinzel py-3 uppercase text-sm tracking-[0.2em] border border-[#333] transition-colors";
+            } else {
+                document.getElementById('vista-aforo').classList.add('hidden');
+                document.getElementById('vista-reservas').classList.remove('hidden');
+                document.getElementById('tab-reservas').className = "flex-1 bg-brand-gold text-brand-dark font-cinzel font-bold py-3 uppercase text-sm tracking-[0.2em] transition-colors";
+                document.getElementById('tab-aforo').className = "flex-1 bg-transparent text-[#888] font-cinzel py-3 uppercase text-sm tracking-[0.2em] border border-[#333] transition-colors";
+                
+                if(!document.getElementById('input-fecha-lista').value) {
+                    const d = new Date();
+                    document.getElementById('input-fecha-lista').value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                }
+                
+                if(typeof descargarListaReservas === "function") descargarListaReservas();
+            }
+        }
+    </script>
+
+    <script>
+        const SUPABASE_URL = 'https://khpocrsupatikprigpxw.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'sb_publishable_Z0soHkdqh0SBjSTY-yBayA_anFNj5IB';
+        
+        let todasLasMesas = [];
+        let reservasDeHoy = [];
+
+        async function actualizarDatos() {
+            try {
+                document.getElementById('estado').innerText = "Actualizando...";
+                
+                const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+                const d = new Date();
+                const hoy = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+                const resMesas = await supabase.from('mesas').select('*');
+                if (resMesas.error) throw resMesas.error;
+                todasLasMesas = resMesas.data || [];
+
+                const resReservas = await supabase.from('reservas').select('*').eq('fecha', hoy);
+                if (resReservas.error) throw resReservas.error;
+                reservasDeHoy = resReservas.data || [];
+
+                pintarNumerosAforo(d, hoy);
+
+                document.getElementById('estado').innerText = "✓ ONLINE";
+                document.getElementById('estado').className = "text-[#E5E5E5] border border-[#333] font-light text-xs uppercase tracking-widest px-2 py-1";
+            } catch (error) {
+                document.getElementById('estado').innerText = "❌ RECONECTANDO...";
+                document.getElementById('estado').className = "text-[#E5E5E5] border border-red-900 font-light text-xs uppercase tracking-widest px-2 py-1";
+            }
+        }
+
+        function pintarNumerosAforo(ahora, hoyIso) {
+            let intLibres = 0; let intTotal = 0;
+            let terLibres = 0; let terTotal = 0;
+
+            todasLasMesas.forEach(mesa => {
+                if (mesa.zona === 'Interior') intTotal++;
+                if (mesa.zona === 'Terraza') terTotal++;
+
+                let esLibreFisica = (mesa.estado_actual === 'libre');
+                let chocanConInternet = reservasDeHoy.some(r => {
+                    if (r.mesa_id !== mesa.id) return false;
+                    let horaDeReserva = new Date(`${hoyIso}T${r.hora_inicio}`);
+                    // 150 min (2.5h) de bloqueo antes y después.
+                    return Math.abs((ahora - horaDeReserva) / 60000) < 150; 
+                });
+
+                if (esLibreFisica && !chocanConInternet) {
+                    if (mesa.zona === 'Interior') intLibres++;
+                    if (mesa.zona === 'Terraza') terLibres++;
+                }
+            });
+
+            document.getElementById('num-interior').innerHTML = `<span class="${intLibres===0 ? 'text-[#882222]' : 'text-brand-text'}">${intLibres}</span> <span class="text-3xl text-[#444]">/ ${intTotal}</span>`;
+            document.getElementById('num-terraza').innerHTML = `<span class="${terLibres===0 ? 'text-[#882222]' : 'text-brand-text'}">${terLibres}</span> <span class="text-3xl text-[#444]">/ ${terTotal}</span>`;
+        }
+
+        async function ocupar(zona) {
+            const btn = (zona === 'Interior') ? document.getElementById('btn-oc-int') : document.getElementById('btn-oc-ter');
+            const textoPrevio = btn.innerText;
+            btn.innerText = "⏳...";
+
+            try {
+                const ahora = new Date();
+                const hoyIso = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}`;
+
+                let mesaParaSentar = todasLasMesas.find(mesa => {
+                    if (mesa.zona !== zona || mesa.estado_actual !== 'libre') return false;
+                    let chocan = reservasDeHoy.some(r => {
+                        if (r.mesa_id !== mesa.id) return false;
+                        let horaDeReserva = new Date(`${hoyIso}T${r.hora_inicio}`);
+                        return Math.abs((ahora - horaDeReserva) / 60000) < 150; 
+                    });
+                    return !chocan; 
+                });
+
+                if (!mesaParaSentar) {
+                    btn.innerText = textoPrevio;
+                    return alert(`❌ ¡No quedan mesas libres en ${zona}! Las que ves están reservadas por internet.`);
+                }
+
+                const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                await supabase.from('mesas').update({ estado_actual: 'ocupada' }).eq('id', mesaParaSentar.id);
+                
+                await actualizarDatos();
+            } catch (error) {
+                alert("❌ Fallo de red. Inténtalo de nuevo.");
+            }
+            btn.innerText = textoPrevio;
+        }
+
+        async function liberar(zona) {
+            const btn = (zona === 'Interior') ? document.getElementById('btn-lib-int') : document.getElementById('btn-lib-ter');
+            const textoPrevio = btn.innerText;
+            btn.innerText = "⏳...";
+
+            try {
+                const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+                let mesaOcupadaManualmente = todasLasMesas.find(mesa => mesa.zona === zona && mesa.estado_actual === 'ocupada');
+                
+                if (mesaOcupadaManualmente) {
+                    await supabase.from('mesas').update({ estado_actual: 'libre' }).eq('id', mesaOcupadaManualmente.id);
+                } else {
+                    const ahora = new Date();
+                    const hoyIso = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}`;
+                    
+                    let reservaQueEstorba = reservasDeHoy.find(r => {
+                        let mesaVinculada = todasLasMesas.find(m => m.id === r.mesa_id);
+                        if (!mesaVinculada || mesaVinculada.zona !== zona) return false;
+                        
+                        let horaDeReserva = new Date(`${hoyIso}T${r.hora_inicio}`);
+                        return Math.abs((ahora - horaDeReserva) / 60000) < 150; 
+                    });
+
+                    if (reservaQueEstorba) {
+                        await supabase.from('reservas').delete().eq('id', reservaQueEstorba.id);
+                    } else {
+                        btn.innerText = textoPrevio;
+                        return alert(`⚠️ Ya están todas las mesas de ${zona} completamente vacías.`);
+                    }
+                }
+                
+                await actualizarDatos();
+            } catch (error) {
+                alert("❌ Fallo de red. Inténtalo de nuevo.");
+            }
+            btn.innerText = textoPrevio;
+        }
+
+        async function descargarListaReservas() {
+            const fechaElegida = document.getElementById('input-fecha-lista').value;
+            const caja = document.getElementById('caja-reservas');
+            caja.innerHTML = '<p class="text-center font-light text-brand-gold tracking-wide">Descargando reservas...</p>';
+
+            try {
+                const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                
+                const { data: reservasDato, error } = await supabase
+                    .from('reservas')
+                    .select('hora_inicio, nombre_cliente, telefono_cliente, codigo_secreto, mesas(zona)')
+                    .eq('fecha', fechaElegida)
+                    .order('hora_inicio', { ascending: true });
+
+                if (error) throw error;
+
+                if (!reservasDato || reservasDato.length === 0) {
+                    caja.innerHTML = `<div class="bg-brand-gray p-8 border border-[#2A2A2A] text-center"><p class="text-lg font-light text-[#888] tracking-widest">No hay reservas para este día.</p></div>`;
+                    return;
+                }
+
+                let contenidoHTML = "";
+                reservasDato.forEach(res => {
+                    let horaLimpia = res.hora_inicio.substring(0, 5);
+                    let zona = res.mesas ? res.mesas.zona : "Sin zona";
+                    let color = zona === 'Interior' ? 'text-brand-gold' : 'text-brand-champagne';
+
+                    contenidoHTML += `
+                        <div class="bg-brand-gray p-6 border border-[#2A2A2A] border-l-4 border-l-brand-gold mb-4">
+                            <div class="flex justify-between items-center border-b border-[#333] pb-3 mb-4">
+                                <span class="text-2xl font-cinzel text-brand-gold tracking-widest">${horaLimpia}</span>
+                                <span class="text-sm font-cinzel uppercase ${color} tracking-[0.2em] font-semibold">${zona}</span>
+                            </div>
+                            <p class="text-lg font-poppins text-brand-text uppercase font-semibold tracking-wide">${res.nombre_cliente}</p>
+                            <p class="text-[#888] font-light mt-1 tracking-wider">📞 ${res.telefono_cliente}</p>
+                            <p class="text-[#555] text-xs mt-2 uppercase tracking-[0.15em]">REF: <span class="text-brand-champagne">${res.codigo_secreto}</span></p>
+                        </div>
+                    `;
+                });
+
+                caja.innerHTML = contenidoHTML;
+
+            } catch (error) {
+                caja.innerHTML = '<p class="text-center font-light text-red-500">❌ Error de conexión al descargar reservas.</p>';
+            }
+        }
+
+        setInterval(actualizarDatos, 5000);
+        setTimeout(actualizarDatos, 500);
+
+    </script>
+</body>
+</html>
