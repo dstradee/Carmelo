@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pedir - Restaurante</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-900 font-sans">
+  
+  <div id="app" class="max-w-md mx-auto min-h-screen bg-white relative pb-24 shadow-lg p-4">
+    
+    <!-- Sección de Recuperación -->
+    <div id="recovery-section" class="mb-4 text-right">
+      <button id="btn-recovery" class="text-sm text-blue-600 underline">¿Perdiste tu pedido?</button>
+    </div>
+
+    <!-- Vista Menú -->
+    <div id="menu-view">
+      <h1 class="text-2xl font-bold mb-4">Nuestro Menú</h1>
+      <div id="product-list" class="space-y-4"></div>
+    </div>
+
+    <!-- Vista Estado de Pedido (Tiempo Real) -->
+    <div id="status-view" class="hidden flex flex-col items-center justify-center pt-20">
+      <h2 class="text-3xl font-bold mb-2">Pedido <span id="display-id" class="text-blue-600"></span></h2>
+      <div id="status-badge" class="px-6 py-2 rounded-full text-white font-bold text-xl mb-6"></div>
+      
+      <!-- Anti-Capturas: Reloj en vivo (Solo visible en estado 'listo') -->
+      <div id="anti-screenshot" class="hidden text-center bg-gray-100 p-4 rounded-lg w-full">
+        <p class="text-sm text-gray-500 mb-1">Hora actual (Anti-fraude)</p>
+        <p id="live-clock" class="text-4xl font-mono text-gray-800"></p>
+      </div>
+
+      <div id="enjoy-msg" class="hidden mt-8 text-center">
+        <p class="text-2xl font-bold text-green-600 mb-4">¡Que aproveche!</p>
+        <button id="btn-new-order" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold">Hacer nuevo pedido</button>
+      </div>
+    </div>
+
+    <!-- Modal Personalizar Ingredientes -->
+    <div id="ingredient-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
+      <div class="bg-white w-full max-w-md p-6 rounded-t-2xl max-h-[80vh] overflow-y-auto">
+        <h3 class="text-xl font-bold mb-4" id="modal-product-name"></h3>
+        <div id="ingredient-list" class="space-y-3 mb-6"></div>
+        <div class="flex gap-2">
+          <button id="btn-cancel-modal" class="flex-1 bg-gray-200 py-3 rounded-lg font-bold">Cancelar</button>
+          <button id="btn-add-cart" class="flex-1 bg-black text-white py-3 rounded-lg font-bold">Añadir al carrito</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Barra de Carrito Inferior -->
+    <div id="cart-bar" class="hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-4 z-40 max-w-md mx-auto right-0 flex justify-between items-center shadow-[0_-4px_6px_rgba(0,0,0,0.1)]">
+      <div>
+        <p class="text-sm text-gray-500"><span id="cart-count">0</span> items</p>
+        <p class="font-bold text-lg"><span id="cart-total">0.00</span> €</p>
+      </div>
+      <button id="btn-checkout" class="bg-black text-white px-6 py-3 rounded-lg font-bold">Pagar</button>
+    </div>
+
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
