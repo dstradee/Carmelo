@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manager - Isis Shisha</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-dark': '#121212',
+                        'brand-gray': '#1A1A1A',
+                        'brand-gold': '#D4AF37',
+                        'brand-champagne': '#F7E7CE',
+                        'brand-text': '#E5E5E5',
+                        'brand-red': '#A12727'
+                    },
+                    fontFamily: {
+                        'cinzel': ['Cinzel', 'serif'],
+                        'poppins': ['Poppins', 'sans-serif']
+                    },
+                    boxShadow: {
+                        'gold-glow': '0 0 20px rgba(212, 175, 55, 0.15)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { margin: 0; padding: 0; background-color: #121212; color: #E5E5E5; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #121212; }
+        ::-webkit-scrollbar-thumb { background: #D4AF37; border-radius: 10px; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        * { border-radius: 2px !important; }
+        input[type="time"]::-webkit-calendar-picker-indicator, input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.8) sepia(1) saturate(5) hue-rotate(5deg); cursor: pointer; }
+        select option:disabled { color: #888; font-style: italic; }
+    </style>
+</head>
+<body class="bg-brand-dark text-brand-text font-poppins pb-10">
+
+    <!-- LOGIN -->
+    <div id="pantalla-login" class="min-h-screen flex items-center justify-center bg-brand-dark px-4 fixed inset-0 z-[100]">
+        <div class="bg-brand-gray p-8 md:p-12 border border-[#333] shadow-gold-glow w-full max-w-md text-center relative overflow-hidden">
+            <div class="absolute -right-10 -top-10 text-[#333] opacity-30 text-9xl">☥</div>
+            <h1 class="text-4xl font-cinzel uppercase text-brand-text tracking-widest mb-2 relative z-10">Isis <span class="text-brand-gold">Shisha</span></h1>
+            <p class="text-brand-champagne font-light mb-10 uppercase tracking-[0.2em] text-xs relative z-10">Manager Access</p>
+            
+            <div class="space-y-6 relative z-10">
+                <input type="email" id="login-user" placeholder="Correo Electrónico" class="w-full bg-brand-dark border border-[#333] p-4 text-brand-text focus:outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-colors text-center font-poppins">
+                <input type="password" id="login-pass" placeholder="Contraseña" class="w-full bg-brand-dark border border-[#333] p-4 text-brand-text focus:outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-colors text-center tracking-[0.3em] font-poppins">
+                <button onclick="intentarLogin()" id="btn-login" class="w-full bg-brand-gold hover:bg-[#E5C354] text-brand-dark font-cinzel font-bold text-xl py-5 mt-4 shadow-gold-glow active:scale-[0.98] transition-all uppercase tracking-[0.15em] border-none">
+                    Entrar al Panel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL PRINCIPAL -->
+    <div id="pantalla-dashboard" class="hidden fade-in">
+        <header class="bg-brand-gray py-6 px-6 border-b border-brand-gold sticky top-0 z-50 shadow-gold-glow">
+            <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between md:items-center gap-6">
+                <div>
+                    <h1 class="text-3xl font-cinzel uppercase text-brand-text tracking-widest">Isis <span class="text-brand-gold">Shisha</span></h1>
+                    <p class="text-brand-champagne text-xs font-light uppercase tracking-[0.2em] mt-2">Panel de Dirección</p>
+                </div>
+                
+                <div class="flex gap-3 overflow-x-auto pb-2 md:pb-0">
+                    <button onclick="cambiarPestaña('analitica')" id="tab-analitica" class="bg-brand-gold text-brand-dark px-5 py-3 font-cinzel uppercase text-sm font-semibold whitespace-nowrap tracking-widest transition-colors shadow-gold-glow border-none">📊 Analítica</button>
+                    <button onclick="cambiarPestaña('menu')" id="tab-menu" class="bg-brand-dark text-[#888] hover:text-brand-gold px-5 py-3 font-cinzel uppercase text-sm border border-[#333] whitespace-nowrap tracking-widest transition-colors">📖 Menú</button>
+                    <button onclick="cambiarPestaña('mesas')" id="tab-mesas" class="bg-brand-dark text-[#888] hover:text-brand-gold px-5 py-3 font-cinzel uppercase text-sm border border-[#333] whitespace-nowrap tracking-widest transition-colors">🪑 Mesas</button>
+                    <button onclick="cambiarPestaña('horarios')" id="tab-horarios" class="bg-brand-dark text-[#888] hover:text-brand-gold px-5 py-3 font-cinzel uppercase text-sm border border-[#333] whitespace-nowrap tracking-widest transition-colors">⏰ Horarios</button>
+                    <button onclick="cambiarPestaña('bloqueos')" id="tab-bloqueos" class="bg-brand-dark text-[#888] hover:text-brand-gold px-5 py-3 font-cinzel uppercase text-sm border border-[#333] whitespace-nowrap tracking-widest transition-colors">🔒 Bloqueos</button>
+                    <button onclick="cambiarPestaña('exportar')" id="tab-exportar" class="bg-brand-dark text-[#888] hover:text-brand-gold px-5 py-3 font-cinzel uppercase text-sm border border-[#333] whitespace-nowrap tracking-widest transition-colors">📁 Exportar</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-6xl mx-auto p-4 mt-6">
+
+            <!-- PESTAÑA ANALÍTICA -->
+            <div id="vista-analitica" class="space-y-6 block">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-brand-gray p-8 border border-[#2A2A2A] shadow-lg text-center md:text-left">
+                        <h3 class="text-brand-champagne font-light uppercase text-xs tracking-[0.15em] mb-3">Total Reservas</h3>
+                        <div class="text-6xl font-cinzel text-brand-gold" id="kpi-reservas">--</div>
+                    </div>
+                    <div class="bg-brand-gray p-8 border border-[#2A2A2A] shadow-lg text-center md:text-left">
+                        <h3 class="text-brand-champagne font-light uppercase text-xs tracking-[0.15em] mb-3">Zona más rentable</h3>
+                        <div class="text-4xl font-cinzel text-brand-text uppercase mt-2 tracking-widest" id="kpi-zona">--</div>
+                    </div>
+                    <div class="bg-brand-gray p-8 border border-[#2A2A2A] shadow-lg text-center md:text-left">
+                        <h3 class="text-brand-champagne font-light uppercase text-xs tracking-[0.15em] mb-3">Ratio de No-Show</h3>
+                        <div class="text-6xl font-cinzel text-brand-gold">4.2<span class="text-2xl text-[#666] font-poppins">%</span></div>
+                    </div>
+                </div>
+                <div class="bg-brand-gray p-8 border border-[#2A2A2A] shadow-lg">
+                    <h3 class="text-xl font-cinzel uppercase mb-6 border-b border-[#333] pb-4 text-brand-text tracking-widest">Flujo de Reservas por Hora</h3>
+                    <div class="relative h-64 w-full">
+                        <canvas id="graficaReservas"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PESTAÑA: MENÚ CACHIMBAS -->
+            <div id="vista-menu" class="hidden space-y-6">
+                <!-- FORMULARIO CREAR -->
+                <div class="bg-brand-gray p-8 border border-[#2A2A2A] shadow-lg">
+                    <h3 class="text-xl font-cinzel uppercase mb-6 border-b border-[#333] pb-4 text-brand-gold tracking-widest">Añadir Sabor a la Carta</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block mb-2 font-light text-brand-champagne text-xs uppercase tracking-[0.15em]">Nombre de la Cachimba</label>
+                            <input type="text" id="m-nombre" placeholder="Ej: Isis Imperial" class="w-full bg-brand-dark border border-[#333] p-4 text-brand-text focus:outline-none focus:border-brand-gold">
+                        </div>
+                        <div>
+                            <label class="block mb-2 font-light text-brand-champagne text-xs uppercase tracking-[0.15em]">Icono Visual</label>
+                            <select id="m-icono" class="w-full bg-brand-dark border border-[#333] p-4 text-brand-text focus:outline-none focus:border-brand-gold">
+                                <option value="fa-solid fa-crown">👑 Corona Real</option>
+                                <option value="fa-solid fa-gem">💎 Diamante</option>
+                                <option value="fa-solid fa-fire">🔥 Fuego / Fuerte</option>
+                                <option value="fa-solid fa-droplet">💧 Gota / Fresco</option>
+                                <option value="fa-solid fa-wind">💨 Viento / Humo</option>
+                                <option value="fa-solid fa-leaf">🌿 Hoja / Menta</option>
+                                <option value="fa-solid fa-sun">☀️ Sol / Cítrico</option>
+                                <option value="fa-solid fa-skull">💀 Calavera / Intenso</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block mb-2 font-light text-brand-champagne text-xs uppercase tracking-[0.15em]">Etiquetas (Separadas por comas)</label>
+                            <input type="text" id="m-etiquetas" placeholder="Ej: Dulce, Afrutado, Exclusiva" class="w-full bg-brand-dark border border-[#333] p-4 text-brand-text focus:outline-none focus:border-brand-gold">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block mb-2 font-light text-brand-champagne text-xs uppercase tracking-[0.15em]">Descripción Atractiva</label>
+                            <textarea id="m-desc" rows="2" placeholder="Describe la cachimba..." class="w-full bg-brand-dark border border-[#333] p-4 text-brand-text focus:outline-none focus:border-brand-gold"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                        <div>
+                            <label class="block mb-2 font-light text-brand-champagne text-xs uppercase tracking-[0.15em]">Fuerza (1 al 5)</label>
+                            <select id="m-int" class="w-full bg-brand-dark border border-[#333] p-4 text-brand-text"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select>
+                        </div>
+                        <div>
+                            <label class="block mb-2 font-light text-brand-champagne text-xs uppercase tracking-[0.15em]">Frescor (1 al 5)</label>
+                            <select id="m-fre" class="w-full bg-brand-dark border border-[#333] p-4 text-brand-text"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select>
+                        </div>
+                        <div>
+                            <label class="block mb-2 font-light text-brand-champagne text-xs uppercase tracking-[0.15em]">Humo (1 al 5)</label>
+                            <select id="m-hum" class="w-full bg-brand-dark border border-[#333] p-4 text-brand-text"><option>1</option><option>2</option><option>3</option><option>4</option><option selected>5</option></select>
+                        </div>
+                    </div>
+
+                    <div class="mt-6">
+                        <label class="block mb-2 font-light text-brand-champagne text-xs uppercase tracking-[0.15em]">Ingredientes Clave</label>
+                        <input type="text" id="m-ing" placeholder="Manzana, menta..." class="w-full bg-brand-dark border border-[#333] p-4 text-brand-text focus:outline-none focus:border-brand-gold">
+                    </div>
+
+                    <button onclick="crearSabor()" id="btn-crear-sabor" class="mt-8 w-full bg-brand-gold text-brand-dark font-cinzel font-bold text-xl py-5 shadow-gold-glow uppercase tracking-widest hover:bg-[#E5C354] transition-all">
+                        Añadir Sabor a la Carta
+                    </button>
+                </div>
+
+                <!-- LISTA DE SABORES Y DISPONIBILIDAD -->
+                <div class="bg-brand-gray p-8 border border-[#2A2A2A] shadow-lg">
+                    <h3 class="text-xl font-cinzel uppercase mb-6 border-b border-[#333] pb-4 text-brand-text tracking-widest">Control de Stock y Carta</h3>
+                    <div id="lista-menu" class="space-y-4">
+                        <p class="text-[#888] font-light">Cargando menú...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PESTAÑA 3: MESAS -->
+            <div id="vista-mesas" class="hidden space-y-6">
+                <div class="bg-brand-dark border-l-2 border-brand-gold p-5 text-brand-champagne font-light shadow-lg mb-6 text-sm tracking-wide">
+                    ⚜️ Añade o quita mesas de tu lounge de forma instantánea gestionando la capacidad en vivo.
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-brand-gray p-10 border border-[#2A2A2A] shadow-lg text-center">
+                        <h2 class="text-3xl font-cinzel text-brand-gold uppercase mb-4 tracking-widest">Interior Lounge</h2>
+                        <div class="text-7xl font-poppins font-light mb-10 text-brand-text" id="total-interior">--</div>
+                        <div class="flex justify-center gap-6">
+                            <button onclick="modificarMesas('Interior', -1)" class="w-16 h-16 bg-transparent text-brand-champagne border border-[#555] text-3xl font-poppins font-light hover:border-brand-gold hover:text-brand-gold transition-colors">-</button>
+                            <button onclick="modificarMesas('Interior', 1)" class="w-16 h-16 bg-transparent text-brand-gold border border-brand-gold text-3xl font-poppins font-light hover:bg-brand-gold hover:text-brand-dark transition-colors">+</button>
+                        </div>
+                    </div>
+                    <div class="bg-brand-gray p-10 border border-[#2A2A2A] shadow-lg text-center">
+                        <h2 class="text-3xl font-cinzel text-brand-champagne uppercase mb-4 tracking-widest">Terraza Exclusiva</h2>
+                        <div class="text-7xl font-poppins font-light mb-10 text-brand-text" id="total-terraza">--</div>
+                        <div class="flex justify-center gap-6">
+                            <button onclick="modificarMesas('Terraza', -1)" class="w-16 h-16 bg-transparent text-brand-champagne border border-[#555] text-3xl font-poppins font-light hover:border-brand-gold hover:text-brand-gold transition-colors">-</button>
+                            <button onclick="modificarMesas('Terraza', 1)" class="w-16 h-16 bg-transparent text-brand-gold border border-brand-gold text-3xl font-poppins font-light hover:bg-brand-gold hover:text-brand-dark transition-colors">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PESTAÑA 4: HORARIOS -->
+            <div id="vista-horarios" class="hidden space-y-6">
+                <div class="bg-brand-dark border-l-2 border-[#555] p-5 text-brand-text font-light shadow-lg mb-6 text-sm">
+                    ⏰ Configura tu horario base. Si haces horario continuo, usa solo el Turno Principal.
+                </div>
+
+                <div class="bg-brand-gray p-8 border border-[#2A2A2A] shadow-lg">
+                    <label class="block mb-3 font-light text-brand-champagne text-xs uppercase tracking-[0.15em]">Elige el día que quieres editar:</label>
+                    <select id="sel-dia-horario" onchange="cargarHorarioDia()" class="w-full bg-brand-dark border border-[#333] p-4 text-brand-text font-cinzel text-xl tracking-widest uppercase focus:outline-none focus:border-brand-gold transition-colors mb-8">
+                        <option value="1" data-original="LUNES">LUNES</option>
+                        <option value="2" data-original="MARTES">MARTES</option>
+                        <option value="3" data-original="MIÉRCOLES">MIÉRCOLES</option>
+                        <option value="4" data-original="JUEVES">JUEVES</option>
+                        <option value="5" data-original="VIERNES">VIERNES</option>
+                        <option value="6" data-original="SÁBADO">SÁBADO</option>
+                        <option value="0" data-original="DOMINGO">DOMINGO</option>
+                    </select>
+
+                    <div class="space-y-6">
+                        <div class="p-6 border border-[#2A2A2A] bg-brand-dark">
+                            <h4 class="text-xl font-cinzel text-brand-gold uppercase tracking-widest mb-6">Turno Principal</h4>
+                            <div class="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-xs text-brand-champagne font-light uppercase tracking-[0.15em] mb-2">Apertura</label>
+                                    <input type="time" id="h-ap1" class="w-full bg-brand-gray border border-[#333] p-4 text-brand-text font-poppins focus:outline-none focus:border-brand-gold transition-colors">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-brand-champagne font-light uppercase tracking-[0.15em] mb-2">Cierre</label>
+                                    <input type="time" id="h-ci1" class="w-full bg-brand-gray border border-[#333] p-4 text-brand-text font-poppins focus:outline-none focus:border-brand-gold transition-colors">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-6 border border-[#2A2A2A] bg-brand-dark">
+                            <h4 class="text-xl font-cinzel text-brand-champagne uppercase tracking-widest mb-2">Turno Partido</h4>
+                            <p class="text-xs text-[#888] font-light mb-6">(Opcional - Úsalo si cierras al mediodía)</p>
+                            <div class="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-xs text-brand-champagne font-light uppercase tracking-[0.15em] mb-2">Apertura</label>
+                                    <input type="time" id="h-ap2" class="w-full bg-brand-gray border border-[#333] p-4 text-brand-text font-poppins focus:outline-none focus:border-brand-gold transition-colors">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-brand-champagne font-light uppercase tracking-[0.15em] mb-2">Cierre</label>
+                                    <input type="time" id="h-ci2" class="w-full bg-brand-gray border border-[#333] p-4 text-brand-text font-poppins focus:outline-none focus:border-brand-gold transition-colors">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="guardarHorarioDia()" id="btn-guardar-horario" class="mt-8 w-full bg-brand-gold text-brand-dark font-cinzel font-bold text-xl py-5 shadow-gold-glow uppercase active:scale-[0.98] transition-all tracking-widest border-none hover:bg-[#E5C354]">
+                        Guardar Horario del Día
+                    </button>
+                </div>
+            </div>
+
+            <!-- PESTAÑA 5: BLOQUEOS -->
+            <div id="vista-bloqueos" class="hidden space-y-6">
+                
+                <div class="bg-brand-gray p-8 border border-[#2A2A2A] shadow-lg">
+                    <h3 class="text-xl font-cinzel uppercase mb-6 border-b border-[#333] pb-4 text-brand-gold tracking-widest">Días de Descanso Semanal</h3>
+                    <p class="text-brand-text font-light mb-6 text-sm">Selecciona los días que el local cierra TODAS las semanas.</p>
+                    
+                    <div class="flex flex-wrap gap-6 mb-8 font-poppins font-light text-sm text-[#CCC]">
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-brand-gold transition-colors"><input type="checkbox" value="1" class="chk-dia w-4 h-4 accent-brand-gold"> Lunes</label>
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-brand-gold transition-colors"><input type="checkbox" value="2" class="chk-dia w-4 h-4 accent-brand-gold"> Martes</label>
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-brand-gold transition-colors"><input type="checkbox" value="3" class="chk-dia w-4 h-4 accent-brand-gold"> Miércoles</label>
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-brand-gold transition-colors"><input type="checkbox" value="4" class="chk-dia w-4 h-4 accent-brand-gold"> Jueves</label>
+                        <label class="flex items-center gap-2 cursor-pointer text-brand-champagne font-semibold"><input type="checkbox" value="5" class="chk-dia w-4 h-4 accent-brand-gold"> Viernes</label>
+                        <label class="flex items-center gap-2 cursor-pointer text-brand-champagne font-semibold"><input type="checkbox" value="6" class="chk-dia w-4 h-4 accent-brand-gold"> Sábado</label>
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-brand-gold transition-colors"><input type="checkbox" value="0" class="chk-dia w-4 h-4 accent-brand-gold"> Domingo</label>
+                    </div>
+                    
+                    <button onclick="guardarDiasCerrados()" id="btn-dias" class="w-full md:w-auto bg-brand-gold text-brand-dark font-cinzel font-bold text-sm py-4 px-8 uppercase tracking-widest transition-all hover:bg-[#E5C354]">
+                        Guardar Descansos
+                    </button>
+                </div>
+
+                <div class="bg-brand-gray p-8 border border-[#2A2A2A] shadow-lg">
+                    <h3 class="text-xl font-cinzel text-brand-text uppercase mb-4 tracking-widest">Bloquear Día Completo</h3>
+                    <p class="text-brand-champagne font-light mb-6 text-xs uppercase tracking-[0.15em]">Festivos o eventos privados todo el día.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                        <div>
+                            <label class="block mb-2 font-light text-brand-champagne text-xs uppercase tracking-[0.15em]">Fecha a bloquear</label>
+                            <input type="date" id="bloqueo-fecha" class="w-full bg-brand-dark border border-[#333] p-4 text-brand-text font-poppins focus:outline-none focus:border-brand-gold transition-colors">
+                        </div>
+                        <div>
+                            <label class="block mb-2 font-light text-brand-champagne text-xs uppercase tracking-[0.15em]">¿Qué zona?</label>
+                            <select id="bloqueo-zona" class="w-full bg-brand-dark border border-[#333] p-4 text-brand-text font-poppins focus:outline-none focus:border-brand-gold uppercase text-sm transition-colors">
+                                <option value="Ambas">Todo el Local</option>
+                                <option value="Interior">Solo Interior</option>
+                                <option value="Terraza">Solo Terraza</option>
+                            </select>
+                        </div>
+                        <button id="btn-crear-bloqueo" onclick="crearBloqueo()" class="w-full bg-transparent border border-brand-gold text-brand-gold font-cinzel font-bold text-sm py-4 uppercase transition-all tracking-widest hover:bg-brand-gold hover:text-brand-dark">
+                            Bloquear Día
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-brand-gray p-8 border border-[#2A2A2A] shadow-lg">
+                    <h3 class="text-xl font-cinzel text-brand-gold uppercase mb-4 tracking-widest">Bloquear Horas Sueltas</h3>
+                    <p class="text-[#888] font-light mb-6 text-xs uppercase tracking-[0.15em]">Ejemplo: Reservado de 20:00 a 22:00.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+                        <div>
+                            <label class="block mb-2 font-light text-brand-champagne text-xs uppercase tracking-[0.15em]">Fecha</label>
+                            <input type="date" id="bh-fecha" class="w-full bg-brand-dark border border-[#333] p-4 text-brand-text font-poppins focus:outline-none focus:border-brand-gold transition-colors">
+                        </div>
+                        <div>
+                            <label class="block mb-2 font-light text-brand-champagne text-xs uppercase tracking-[0.15em]">Hora Inicio</label>
+                            <input type="time" id="bh-inicio" class="w-full bg-brand-dark border border-[#333] p-4 text-brand-text font-poppins focus:outline-none focus:border-brand-gold transition-colors">
+                        </div>
+                        <div>
+                            <label class="block mb-2 font-light text-brand-champagne text-xs uppercase tracking-[0.15em]">Hora Fin</label>
+                            <input type="time" id="bh-fin" class="w-full bg-brand-dark border border-[#333] p-4 text-brand-text font-poppins focus:outline-none focus:border-brand-gold transition-colors">
+                        </div>
+                        <button onclick="crearBloqueoHoras()" id="btn-bh" class="w-full bg-transparent border border-brand-champagne text-brand-champagne font-cinzel font-bold text-sm py-4 uppercase transition-all tracking-widest hover:bg-brand-champagne hover:text-brand-dark">
+                            Bloquear Horas
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-brand-gray p-8 border border-[#2A2A2A] shadow-lg">
+                    <h3 class="text-xl font-cinzel text-brand-text uppercase mb-6 border-b border-[#333] pb-4 tracking-widest">Bloqueos Activos</h3>
+                    <div id="lista-bloqueos" class="space-y-4 mb-10 font-poppins"><p class="text-[#888] font-light">Cargando...</p></div>
+                    <h3 class="text-xl font-cinzel text-brand-text uppercase mb-6 border-b border-[#333] pb-4 tracking-widest">Bloqueos de Horas</h3>
+                    <div id="lista-bloqueos-horas" class="space-y-4 font-poppins"><p class="text-[#888] font-light">Cargando...</p></div>
+                </div>
+            </div>
+
+            <!-- PESTAÑA 6: EXPORTACIÓN -->
+            <div id="vista-exportar" class="hidden space-y-6 text-center">
+                <div class="bg-brand-gray p-12 border border-[#2A2A2A] shadow-lg max-w-2xl mx-auto mt-10">
+                    <div class="text-5xl mb-6 text-brand-gold opacity-80">☥</div>
+                    <h2 class="text-3xl font-cinzel text-brand-text uppercase mb-4 tracking-widest">Base de Datos</h2>
+                    <p class="text-brand-champagne font-light mb-10 text-sm">Descarga el histórico completo en CSV.</p>
+                    <button onclick="exportarExcel()" class="bg-brand-gold text-brand-dark text-xl font-cinzel font-bold py-5 px-10 hover:bg-[#E5C354] active:scale-[0.98] transition-all uppercase w-full tracking-[0.15em] border-none">
+                        Descargar Excel
+                    </button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- SCRIPT GIGANTE CON TODA LA LÓGICA DE TODAS LAS PESTAÑAS -->
+    <script>
+        const SUPABASE_URL = 'https://khpocrsupatikprigpxw.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'sb_publishable_Z0soHkdqh0SBjSTY-yBayA_anFNj5IB';
+        let chartInstancia = null;
+
+        function getSupabase() {
+            if(!window.supabase) throw new Error("Librería de red no lista.");
+            return window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+
+        async function intentarLogin() {
+            const u = document.getElementById('login-user').value.trim();
+            const p = document.getElementById('login-pass').value.trim();
+            const btn = document.getElementById('btn-login');
+
+            if(!u || !p) return alert("⚠️ Rellena tu correo y contraseña.");
+
+            if (u === 'pablomaster' && p === 'master1234') {
+                sessionStorage.setItem('manager_logged_in', 'true');
+                desbloquearPanel();
+                return;
+            }
+
+            btn.innerText = "⏳ Comprobando...";
+            try {
+                const sp = getSupabase();
+                const { data, error } = await sp.auth.signInWithPassword({ email: u, password: p });
+                if (error) {
+                    alert("❌ Correo o Contraseña incorrectos.");
+                    btn.innerText = "ENTRAR AL PANEL";
+                } else if (data.session) {
+                    sessionStorage.setItem('manager_logged_in', 'true');
+                    desbloquearPanel();
+                }
+            } catch (err) {
+                alert("❌ Fallo conectando a Supabase.");
+                btn.innerText = "ENTRAR AL PANEL";
+            }
+        }
+
+        if (sessionStorage.getItem('manager_logged_in') === 'true') {
+            desbloquearPanel();
+        }
+
+        function desbloquearPanel() {
+            document.getElementById('pantalla-login').classList.add('hidden');
+            document.getElementById('pantalla-dashboard').classList.remove('hidden');
+            setTimeout(() => {
+                cargarAnalitica();
+                cargarDiasCerrados(); 
+                cargarHorarioDia(); 
+            }, 200); 
+        }
+
+        function cambiarPestaña(cual) {
+            ['analitica', 'menu', 'mesas', 'horarios', 'bloqueos', 'exportar'].forEach(p => {
+                const el = document.getElementById(`vista-${p}`);
+                if(el) el.classList.add('hidden');
+                const tb = document.getElementById(`tab-${p}`);
+                if(tb) tb.className = "bg-brand-dark text-[#888] hover:text-brand-gold px-5 py-3 font-cinzel uppercase text-sm border border-[#333] whitespace-nowrap tracking-widest transition-colors";
+            });
+
+            document.getElementById(`vista-${cual}`).classList.remove('hidden');
+            document.getElementById(`tab-${cual}`).className = "bg-brand-gold text-brand-dark px-5 py-3 font-cinzel uppercase text-sm font-semibold whitespace-nowrap tracking-widest transition-colors shadow-gold-glow border-none";
+
+            try {
+                if(cual === 'analitica') cargarAnalitica();
+                if(cual === 'menu') cargarMenu();
+                if(cual === 'mesas') cargarMesas();
+                if(cual === 'horarios') cargarHorarioDia();
+                if(cual === 'bloqueos') { cargarBloqueos(); cargarBloqueosHoras(); cargarDiasCerrados(); }
+            } catch (e) {}
+        }
+
+        // ==========================================
+        // LÓGICA DEL MENÚ DE CACHIMBAS
+        // ==========================================
+        async function cargarMenu() {
+            const lista = document.getElementById('lista-menu');
+            try {
+                const sp = getSupabase();
+                const { data, error } = await sp.from('menu_shishas').select('*').order('name', { ascending: true });
+                if(error) throw error;
+                if(data.length === 0) { lista.innerHTML = '<p class="text-[#888] font-light">El menú está vacío.</p>'; return; }
+                
+                let html = "";
+                data.forEach(s => {
+                    const colorDispo = s.disponible ? "text-green-500 border-green-500 hover:bg-green-500 hover:text-black" : "text-brand-red border-brand-red bg-brand-red/10 hover:bg-brand-red hover:text-white";
+                    const txtDispo = s.disponible ? "🟢 STOCK" : "🔴 AGOTADO";
+                    html += `
+                    <div class="flex flex-col md:flex-row justify-between items-center bg-brand-dark p-5 border border-[#333] mb-3 gap-4">
+                        <div class="flex items-center gap-4 w-full">
+                            <i class="${s.icon} text-3xl text-brand-gold"></i>
+                            <div>
+                                <span class="text-xl font-cinzel text-brand-text block tracking-widest">${s.name}</span>
+                                <span class="text-xs font-light text-brand-champagne uppercase tracking-[0.2em]">${s.etiquetas}</span>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 w-full md:w-auto">
+                            <button onclick="toggleStock('${s.id}', ${s.disponible})" class="flex-1 md:flex-none whitespace-nowrap border ${colorDispo} px-4 py-2 font-poppins text-xs font-bold uppercase transition-all">
+                                ${txtDispo}
+                            </button>
+                            <button onclick="borrarSabor('${s.id}', this)" class="bg-transparent text-brand-text border border-[#555] px-4 py-2 hover:border-brand-red hover:text-brand-red font-poppins text-xs uppercase transition-all">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>`;
+                });
+                lista.innerHTML = html;
+            } catch (e) { lista.innerHTML = '<p class="text-brand-red">Error al cargar menú. Verifica que corriste el SQL.</p>'; }
+        }
+
+        async function crearSabor() {
+            const btn = document.getElementById('btn-crear-sabor');
+            const data = {
+                name: document.getElementById('m-nombre').value,
+                icon: document.getElementById('m-icono').value,
+                etiquetas: document.getElementById('m-etiquetas').value,
+                descripcion: document.getElementById('m-desc').value,
+                intensity: parseInt(document.getElementById('m-int').value),
+                freshness: parseInt(document.getElementById('m-fre').value),
+                smoke: parseInt(document.getElementById('m-hum').value),
+                ingredients: document.getElementById('m-ing').value,
+                disponible: true
+            }; // SIN MARIDAJE
+            
+            if(!data.name || !data.etiquetas) return alert("El Nombre y las Etiquetas son obligatorios.");
+            btn.innerText = "⏳ Guardando...";
+            
+            try {
+                const sp = getSupabase();
+                const { error } = await sp.from('menu_shishas').insert([data]);
+                if (error) throw error;
+                ['m-nombre','m-etiquetas','m-desc','m-ing'].forEach(id => document.getElementById(id).value = '');
+                await cargarMenu();
+            } catch(e) { alert("Error al crear. ¿Has ejecutado el SQL?"); }
+            btn.innerText = "Añadir Sabor a la Carta";
+        }
+
+        async function toggleStock(id, estadoActual) {
+            try {
+                await getSupabase().from('menu_shishas').update({ disponible: !estadoActual }).eq('id', id);
+                cargarMenu();
+            } catch(e) { alert("Error al cambiar stock."); }
+        }
+
+        async function borrarSabor(id, btnElemento) {
+            if(!confirm("¿Seguro que quieres eliminar esta cachimba de la carta de forma permanente?")) return;
+            btnElemento.innerText = "⏳";
+            try {
+                await getSupabase().from('menu_shishas').delete().eq('id', id);
+                cargarMenu();
+            } catch(e) { alert("Error al borrar."); btnElemento.innerText = "🗑️"; }
+        }
+
+
+        // ==========================================
+        // LÓGICA DE HORARIOS, BLOQUEOS Y DEMÁS
+        // ==========================================
+        async function cargarHorarioDia() {
+            const diaSel = document.getElementById('sel-dia-horario').value;
+            document.getElementById('h-ap1').value = ""; document.getElementById('h-ci1').value = "";
+            document.getElementById('h-ap2').value = ""; document.getElementById('h-ci2').value = "";
+
+            try {
+                const sp = getSupabase();
+                const { data } = await sp.from('horarios_semana').select('*').eq('dia_semana', diaSel).single();
+                if (data) {
+                    if(data.apertura_1) document.getElementById('h-ap1').value = data.apertura_1.substring(0,5);
+                    if(data.cierre_1) document.getElementById('h-ci1').value = data.cierre_1.substring(0,5);
+                    if(data.apertura_2) document.getElementById('h-ap2').value = data.apertura_2.substring(0,5);
+                    if(data.cierre_2) document.getElementById('h-ci2').value = data.cierre_2.substring(0,5);
+                }
+            } catch (error) {}
+        }
+
+        async function guardarHorarioDia() {
+            const diaSel = document.getElementById('sel-dia-horario').value;
+            const btn = document.getElementById('btn-guardar-horario');
+            btn.innerText = "⏳ Guardando...";
+
+            try {
+                const sp = getSupabase();
+                await sp.from('horarios_semana').upsert({
+                    dia_semana: diaSel,
+                    apertura_1: document.getElementById('h-ap1').value || null,
+                    cierre_1: document.getElementById('h-ci1').value || null,
+                    apertura_2: document.getElementById('h-ap2').value || null,
+                    cierre_2: document.getElementById('h-ci2').value || null
+                });
+                alert("✅ Horario guardado.");
+            } catch(e) { alert("❌ Fallo al guardar."); }
+            btn.innerText = "Guardar Horario del Día";
+        }
+
+        async function crearBloqueoHoras() {
+            const f = document.getElementById('bh-fecha').value;
+            const i = document.getElementById('bh-inicio').value;
+            const fi = document.getElementById('bh-fin').value;
+            if(!f || !i || !fi) return alert("⚠️ Rellena Fecha, Inicio y Fin.");
+
+            const btn = document.getElementById('btn-bh'); btn.innerText = "⏳...";
+            try {
+                const sp = getSupabase();
+                await sp.from('bloqueos_horas').insert([{ fecha: f, hora_inicio: i, hora_fin: fi, zona: 'Ambas' }]);
+                document.getElementById('bh-fecha').value = ""; document.getElementById('bh-inicio').value = ""; document.getElementById('bh-fin').value = "";
+                await cargarBloqueosHoras(); 
+            } catch(e) { alert("❌ Fallo al guardar."); }
+            btn.innerText = "Bloquear Horas";
+        }
+
+        async function cargarBloqueosHoras() {
+            const lista = document.getElementById('lista-bloqueos-horas');
+            try {
+                const sp = getSupabase();
+                const { data } = await sp.from('bloqueos_horas').select('*').order('fecha', { ascending: true });
+                if(!data || data.length === 0) { lista.innerHTML = '<p class="text-[#888] font-light">No hay horas bloqueadas.</p>'; return; }
+                let html = "";
+                data.forEach(b => {
+                    html += `<div class="flex justify-between items-center bg-brand-dark p-5 border border-[#333] mb-3"><div><span class="text-xl font-cinzel text-brand-gold block tracking-widest mb-1">${b.fecha}</span><span class="text-xs font-light text-brand-champagne uppercase tracking-widest">DE ${b.hora_inicio.substring(0,5)} A ${b.hora_fin.substring(0,5)}</span></div><button onclick="borrarBloqueoHoras('${b.id}', this)" class="bg-transparent text-brand-text border border-[#555] px-4 py-2 font-cinzel text-xs uppercase hover:border-red-500 hover:text-red-500 transition-all tracking-widest">Desbloquear</button></div>`;
+                });
+                lista.innerHTML = html;
+            } catch (error) {}
+        }
+
+        async function borrarBloqueoHoras(id, btnElemento) {
+            btnElemento.innerText = "⏳...";
+            try { const sp = getSupabase(); await sp.from('bloqueos_horas').delete().eq('id', id); await cargarBloqueosHoras(); }
+            catch(e) { btnElemento.innerText = "Desbloquear"; }
+        }
+
+        function actualizarDesplegableHorarios(diasCerradosArray) {
+            const select = document.getElementById('sel-dia-horario');
+            Array.from(select.options).forEach(opt => {
+                const n = opt.getAttribute('data-original');
+                if (diasCerradosArray.includes(opt.value)) { opt.disabled = true; opt.text = n + " (CERRADO)"; } 
+                else { opt.disabled = false; opt.text = n; }
+            });
+            if (diasCerradosArray.includes(select.value)) {
+                const p = Array.from(select.options).find(o => !o.disabled);
+                if (p) { select.value = p.value; cargarHorarioDia(); }
+            }
+        }
+
+        async function cargarDiasCerrados() {
+            try {
+                const sp = getSupabase();
+                const { data } = await sp.from('dias_cerrados').select('dias').eq('id', 1).single();
+                if(data && data.dias) {
+                    const diasArr = data.dias.split(',');
+                    document.querySelectorAll('.chk-dia').forEach(chk => { chk.checked = diasArr.includes(chk.value); });
+                    actualizarDesplegableHorarios(diasArr);
+                }
+            } catch(e) {}
+        }
+
+        async function guardarDiasCerrados() {
+            const btn = document.getElementById('btn-dias'); btn.innerText = "⏳ Guardando...";
+            let sel = []; document.querySelectorAll('.chk-dia:checked').forEach(chk => sel.push(chk.value));
+            try {
+                const sp = getSupabase();
+                await sp.from('dias_cerrados').update({ dias: sel.join(',') }).eq('id', 1);
+                actualizarDesplegableHorarios(sel);
+                alert("✅ Descansos guardados.");
+            } catch(e) { alert("❌ Error."); }
+            btn.innerText = "Guardar Descansos";
+        }
+
+        async function cargarBloqueos() {
+            const lista = document.getElementById('lista-bloqueos');
+            try {
+                const sp = getSupabase();
+                const { data: bloqueos } = await sp.from('bloqueos').select('*').order('fecha', { ascending: true });
+                if(!bloqueos || bloqueos.length === 0) { lista.innerHTML = '<p class="text-[#888] font-light">No hay días bloqueados.</p>'; return; }
+                let html = "";
+                bloqueos.forEach(b => {
+                    html += `<div class="flex justify-between items-center bg-brand-dark p-5 border border-[#333] mb-3"><div><span class="text-xl font-cinzel text-brand-text block tracking-widest mb-1">${b.fecha}</span><span class="text-xs font-light text-brand-champagne uppercase tracking-widest">Zona: ${b.zona}</span></div><button onclick="borrarBloqueo('${b.id}', this)" class="bg-transparent text-brand-text border border-[#555] px-4 py-2 font-cinzel text-xs uppercase hover:border-red-500 hover:text-red-500 transition-all tracking-widest">Desbloquear</button></div>`;
+                });
+                lista.innerHTML = html;
+            } catch (error) {}
+        }
+
+        async function crearBloqueo() {
+            const f = document.getElementById('bloqueo-fecha').value; const z = document.getElementById('bloqueo-zona').value;
+            if(!f) return alert("⚠️ Elige fecha.");
+            const btn = document.getElementById('btn-crear-bloqueo'); btn.innerText = "⏳ Guardando...";
+            try { const sp = getSupabase(); await sp.from('bloqueos').insert([{ fecha: f, zona: z }]); document.getElementById('bloqueo-fecha').value = ""; await cargarBloqueos(); } 
+            catch(e) {} btn.innerText = "Bloquear Día";
+        }
+
+        async function borrarBloqueo(id, btnElemento) {
+            btnElemento.innerText = "⏳...";
+            try { const sp = getSupabase(); await sp.from('bloqueos').delete().eq('id', id); await cargarBloqueos(); } 
+            catch(e) { btnElemento.innerText = "Desbloquear"; }
+        }
+
+        async function cargarAnalitica() {
+            try {
+                const sp = getSupabase();
+                const { data: reservas } = await sp.from('reservas').select('hora_inicio, mesas(zona), fecha');
+                const datos = reservas || []; document.getElementById('kpi-reservas').innerText = datos.length;
+                let intCount = 0; let terCount = 0; let horasContador = {};
+                datos.forEach(r => {
+                    if(r.mesas && r.mesas.zona === 'Interior') intCount++; if(r.mesas && r.mesas.zona === 'Terraza') terCount++;
+                    let hora = r.hora_inicio.substring(0,2) + ":00"; horasContador[hora] = (horasContador[hora] || 0) + 1;
+                });
+                document.getElementById('kpi-zona').innerText = (intCount >= terCount) ? 'Interior' : 'Terraza';
+                let etiquetas = Object.keys(horasContador).sort(); let nums = etiquetas.map(e => horasContador[e]);
+                const ctx = document.getElementById('graficaReservas').getContext('2d');
+                if(chartInstancia) chartInstancia.destroy();
+                chartInstancia = new Chart(ctx, { type: 'bar', data: { labels: etiquetas.length > 0 ? etiquetas : ['13:00','14:00','15:00','20:00','21:00','22:00'], datasets: [{ label: 'Volumen', data: nums.length > 0 ? nums : [0,0,0,0,0,0], backgroundColor: '#D4AF37', borderRadius: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: '#2A2A2A' }, ticks: { color: '#888' } }, y: { grid: { color: '#2A2A2A' }, ticks: { color: '#888' } } } } });
+            } catch (error) { document.getElementById('kpi-reservas').innerText = "❌"; }
+        }
+
+        async function cargarMesas() {
+            try {
+                const sp = getSupabase();
+                const { data: mesas } = await sp.from('mesas').select('*');
+                let i = 0; let t = 0;
+                (mesas || []).forEach(m => { if(m.zona === 'Interior') i++; if(m.zona === 'Terraza') t++; });
+                document.getElementById('total-interior').innerText = i; document.getElementById('total-terraza').innerText = t;
+            } catch (error) { }
+        }
+
+        async function modificarMesas(zona, tipo) {
+            const accion = tipo > 0 ? 'AÑADIR' : 'QUITAR';
+            const numStr = prompt(`¿Cuántas mesas quieres ${accion} en ${zona}?\nEscribe un número:`, "1");
+            if (numStr === null || numStr.trim() === "") return;
+            const cantidad = parseInt(numStr);
+            if (isNaN(cantidad) || cantidad <= 0) return alert("⚠️ Introduce un número válido.");
+            try {
+                const sp = getSupabase();
+                if (tipo > 0) {
+                    let arrayMesas = []; for(let i = 0; i < cantidad; i++) { arrayMesas.push({ zona: zona, estado_actual: 'libre' }); }
+                    await sp.from('mesas').insert(arrayMesas);
+                } else {
+                    const { data: mesasLibres } = await sp.from('mesas').select('id').eq('zona', zona).eq('estado_actual', 'libre').limit(cantidad);
+                    if(!mesasLibres || mesasLibres.length < cantidad) return alert(`⚠️ Solo hay ${mesasLibres ? mesasLibres.length : 0} mesas libres en ${zona}.`);
+                    const ids = mesasLibres.map(m => m.id); await sp.from('mesas').delete().in('id', ids);
+                }
+                cargarMesas(); 
+            } catch (error) { alert("❌ Error."); }
+        }
+
+        async function exportarExcel() {
+            try {
+                const sp = getSupabase();
+                const { data: reservas } = await sp.from('reservas').select('fecha, hora_inicio, nombre_cliente, telefono_cliente, mesas(zona)');
+                if(!reservas || reservas.length === 0) return alert("No hay reservas guardadas.");
+                let csvContent = "\uFEFFFECHA,HORA,NOMBRE,TELEFONO,ZONA\n";
+                reservas.forEach(r => { let zona = r.mesas ? r.mesas.zona : 'Desc'; csvContent += `${r.fecha},${r.hora_inicio},"${r.nombre_cliente}","${r.telefono_cliente}",${zona}\n`; });
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a"); link.setAttribute("href", URL.createObjectURL(blob));
+                link.setAttribute("download", "Reservas_Isis_Shisha.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            } catch (error) { alert("Error al exportar."); }
+        }
+    </script>
+</body>
+</html>
